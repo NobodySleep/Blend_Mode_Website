@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>How Blending Modes Work — Pixel Value Arithmetic</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f4f7fb;
+      --surface: #ffffff;
+      --surface2: #f0f4fa;
+      --border: rgba(24, 95, 165, 0.15);
+      --border-md: rgba(24, 95, 165, 0.25);
+      --text-primary: #0d1f33;
+      --text-secondary: #4a6080;
+      --text-muted: #7a94b0;
+      --blue-dark: #042c53;
+      --blue-mid: #185fa5;
+      --blue-bright: #378ADD;
+      --blue-light: #78b8f0;
+      --blue-pale: #a8cfec;
+      --blue-ghost: #e6f1fb;
+      --hero-start: #0a2a4a;
+      --hero-end: #2176c9;
+      --mono: 'Courier New', Courier, monospace;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+    }
+
+    body {
+      font-family: Georgia, 'Times New Roman', serif;
+      background: var(--bg);
+      color: var(--text-primary);
+      line-height: 1.7;
+    }
+
+    .site {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 3rem 1.5rem 5rem;
+    }
+
+    /* HERO */
+    .hero {
+      background: linear-gradient(135deg, var(--hero-start) 0%, #0d3b6e 40%, #1a5fa8 80%, var(--hero-end) 100%);
+      border-radius: var(--radius-lg);
+      padding: 3.5rem 3rem 3rem;
+      margin-bottom: 3rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        90deg,
+        rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 1px,
+        transparent 1px, transparent 60px
+      );
+    }
+    .hero::after {
+      content: '';
+      position: absolute;
+      bottom: -40px; right: -40px;
+      width: 220px; height: 220px;
+      border-radius: 50%;
+      background: rgba(33,118,201,0.12);
+      pointer-events: none;
+    }
+    .hero-eyebrow {
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--blue-light);
+      margin-bottom: 1rem;
+    }
+    .hero h1 {
+      font-family: Georgia, serif;
+      font-size: 2.6rem;
+      font-weight: normal;
+      color: #e8f4ff;
+      line-height: 1.15;
+      margin-bottom: 1.25rem;
+    }
+    .hero h1 em { color: var(--blue-light); font-style: normal; }
+    .hero p {
+      font-size: 16px;
+      color: var(--blue-pale);
+      line-height: 1.75;
+      max-width: 580px;
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: rgba(33,118,201,0.3);
+      border: 0.5px solid rgba(120,184,240,0.35);
+      border-radius: var(--radius-sm);
+      padding: 5px 13px;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--blue-pale);
+      margin-top: 1.75rem;
+    }
+
+    /* TOC */
+    .toc {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 10px;
+      margin-bottom: 3.5rem;
+    }
+    .toc-item {
+      background: var(--surface);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .toc-num { font-family: var(--mono); font-size: 10px; color: var(--blue-bright); letter-spacing: 0.05em; }
+    .toc-label { font-size: 13px; color: var(--text-primary); font-family: Georgia, serif; }
+
+    /* SECTIONS */
+    .section { margin-bottom: 3.5rem; }
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 0.5px solid var(--border);
+    }
+    .section-num {
+      width: 34px; height: 34px;
+      border-radius: 50%;
+      background: #0d3b6e;
+      color: var(--blue-light);
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--mono);
+      font-size: 12px;
+      flex-shrink: 0;
+    }
+    .section h2 {
+      font-family: Georgia, serif;
+      font-size: 1.3rem;
+      font-weight: normal;
+      color: var(--text-primary);
+    }
+    .section p {
+      font-size: 15.5px;
+      line-height: 1.8;
+      color: var(--text-secondary);
+      margin-bottom: 1.1rem;
+    }
+    .section p:last-child { margin-bottom: 0; }
+    .section em { color: var(--text-primary); font-style: italic; }
+
+    /* FORMULA */
+    .formula-box {
+      background: #071e36;
+      border: 0.5px solid #1a5fa8;
+      border-radius: var(--radius-lg);
+      padding: 1.75rem 2rem;
+      margin: 1.75rem 0;
+      font-family: var(--mono);
+      font-size: 14px;
+      line-height: 2.1;
+    }
+    .formula-main { font-size: 17px; color: #e8f4ff; }
+    .formula-var { color: var(--blue-light); }
+    .formula-divider { height: 0.5px; background: rgba(24,95,165,0.3); margin: 1rem 0; }
+    .formula-vars { display: flex; flex-direction: column; gap: 5px; }
+    .formula-var-row { display: flex; gap: 10px; align-items: baseline; font-size: 13px; }
+    .fv-key { color: var(--blue-light); min-width: 60px; }
+    .fv-eq { color: #3a6080; }
+    .fv-desc { color: var(--blue-pale); }
+    .formula-note { font-family: Georgia, serif; font-size: 12px; color: #4a7090; margin-top: 1rem; display: block; }
+
+    /* MODE CARDS */
+    .modes-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 12px;
+      margin-top: 1.25rem;
+    }
+    .mode-card {
+      background: var(--surface);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+    .mode-card-header {
+      padding: 13px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 0.5px solid var(--border);
+      background: var(--surface2);
+    }
+    .mode-card-title { font-family: Georgia, serif; font-size: 15px; color: var(--text-primary); }
+    .mode-pill { font-family: var(--mono); font-size: 10px; padding: 3px 9px; border-radius: 20px; letter-spacing: 0.04em; }
+    .pill-normal  { background: #dceeff; color: #185fa5; }
+    .pill-dark    { background: #e8e6f7; color: #4a3fa0; }
+    .pill-light   { background: #d8f0e8; color: #0f6e56; }
+    .pill-contrast{ background: #fdefd8; color: #854f0b; }
+    .pill-compare { background: #fde8e8; color: #a32d2d; }
+    .pill-hsl     { background: #e4f0d4; color: #3b6d11; }
+    .mode-card-body { padding: 13px 16px; }
+    .mode-card-body p { font-size: 13.5px; line-height: 1.7; color: var(--text-secondary); }
+    .mode-examples { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 5px; }
+    .mode-tag {
+      font-family: var(--mono);
+      font-size: 11px;
+      padding: 3px 9px;
+      background: var(--blue-ghost);
+      border: 0.5px solid rgba(55,138,221,0.25);
+      border-radius: 4px;
+      color: var(--blue-mid);
+    }
+
+    /* SOURCES */
+    .sources-list { display: flex; flex-direction: column; gap: 9px; margin-top: 1.25rem; }
+    .source-item {
+      display: flex;
+      gap: 12px;
+      padding: 13px 16px;
+      background: var(--surface);
+      border-radius: var(--radius-md);
+      border: 0.5px solid var(--border);
+    }
+    .source-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--blue-bright); margin-top: 7px; flex-shrink: 0; }
+    .source-text { font-family: Georgia, serif; font-size: 13.5px; color: var(--text-secondary); line-height: 1.6; }
+    .source-text em { font-style: italic; }
+
+    /* DIVIDER */
+    .divider { height: 0.5px; background: var(--border); margin: 2.75rem 0; }
+
+    /* FOOTER */
+    .footer {
+      text-align: center;
+      padding-top: 2rem;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      letter-spacing: 0.06em;
+    }
+  </style>
+</head>
+<body>
+<div class="site">
+
+  <div class="hero">
+    <div class="hero-eyebrow">Advanced Interaction Design &mdash; Final</div>
+    <h1>How <em>Blending Modes</em> Work</h1>
+    <p>Most digital art software programs contain some form of blend modes to manipulate and combine two layers. Underneath the surface lie thousands of calculations made sequentially at high speeds — one per overlapping pixel.</p>
+    <div class="hero-badge">&#9632; Pixel Value Arithmetic</div>
+  </div>
+
+  <div class="toc">
+    <div class="toc-item"><span class="toc-num">01</span><span class="toc-label">Introduction</span></div>
+    <div class="toc-item"><span class="toc-num">02</span><span class="toc-label">RGB Values</span></div>
+    <div class="toc-item"><span class="toc-num">03</span><span class="toc-label">The Formula</span></div>
+    <div class="toc-item"><span class="toc-num">04</span><span class="toc-label">Blend Modes</span></div>
+    <div class="toc-item"><span class="toc-num">05</span><span class="toc-label">Sources</span></div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">01</div>
+      <h2>Introduction</h2>
+    </div>
+    <p>Blend modes allow for many effects that are specifically altered by the top layer and a certain blend tool, transforming the bottom layer. These modes allow for effects like recoloring, adding shadows and highlights, increasing contrast, and more.</p>
+    <p>By understanding the math behind blend modes, an artist can improve their eye for detail to achieve a desired effect with more intention. Every overlapping pixel between two layers undergoes an arithmetic calculation to output a new pixel value — based on the initial colors and which of the six general categories of blend mode is utilized.</p>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">02</div>
+      <h2>RGB Values and General Calculation</h2>
+    </div>
+    <p>Monitors exclusively utilize RGB values to determine pixel color and process it for calculation and display. Each value — red, green, and blue — has a numerical value stating the strength of that primary in the combined color. A monitor can have hundreds of thousands of pixels, each set with RGB values that, overall, create a picture on a display.</p>
+    <p>In all art software where the user can manipulate visuals, these RGB values will be frequently changed. When two layers overlap each other, they define a relationship that determines the output of the blend. The top, visible layer manipulates the bottom layer under a certain blend mode, with the modes associated with a formula to output new RGB values.</p>
+    <p>Each value is translated to be between 0 and 1, with each calculation being multiplied by 255 for the output. Additionally, any computations exceeding 1, below 0, or leaving a trailing decimal (exceeding 2 decimal places) are normalized to the closest value within the min-max.</p>
+    <p>In addition to the RGB pixel values being combined, another factor is considered: <em>opacity</em>. Opacity acts as a linear interpolation of the resulting blended pixels — a modifier that determines how much the computed blend impacts the base layer. This additional factor is called <em>Alpha Compositing</em>. It is vital to note that the blend calculation is not impacted by opacity; rather, the resulting blend pixel is affected by opacity strength.</p>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">03</div>
+      <h2>The Core Formula</h2>
+    </div>
+    <p>The following is the basic equation to compute blending, which includes the top/blending layer, bottom/base layer, the blend mode function, and the opacity modifier. It is applied independently to each R, G, and B channel.</p>
+    <div class="formula-box">
+      <div class="formula-main">R &nbsp;= &nbsp;( <span class="formula-var">(1 &minus; &alpha;)</span> &times; B &nbsp;+ &nbsp;f(B, T) &times; <span class="formula-var">&alpha;</span> )</div>
+      <div class="formula-main" style="margin-top:6px;">Result &nbsp;= &nbsp;R &times; 255</div>
+      <div class="formula-divider"></div>
+      <div class="formula-vars">
+        <div class="formula-var-row"><span class="fv-key">&alpha;</span><span class="fv-eq">=</span><span class="fv-desc">Opacity of top layer (0 &ndash; 1)</span></div>
+        <div class="formula-var-row"><span class="fv-key">B</span><span class="fv-eq">=</span><span class="fv-desc">Bottom (base) layer RGB value</span></div>
+        <div class="formula-var-row"><span class="fv-key">T</span><span class="fv-eq">=</span><span class="fv-desc">Top (blend) layer RGB value</span></div>
+        <div class="formula-var-row"><span class="fv-key">f(B,&thinsp;T)</span><span class="fv-eq">=</span><span class="fv-desc">Blend mode function</span></div>
+      </div>
+      <span class="formula-note">Applied independently for each R, G, and B channel.</span>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">04</div>
+      <h2>Blend Mode Categories</h2>
+    </div>
+    <p>There are six general categories of blend modes. Various blend mode functions are relatively simple arithmetic, but some lean on a bit of complexity.</p>
+    <div class="modes-grid">
+
+      <div class="mode-card">
+        <div class="mode-card-header">
+          <span class="mode-card-title">Normal</span>
+          <span class="mode-pill pill-normal">Category 1</span>
+        </div>
+        <div class="mode-card-body">
+          <p>Blending occurs only with the impact of opacity — no blend function equation is applied. Dissolve randomly scatters pixels based on opacity strength, but does not alter RGB values.</p>
+          <div class="mode-examples">
+            <span class="mode-tag">Normal</span>
+            <span class="mode-tag">Dissolve</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="mode-card">
+        <div class="mode-card-header">
+          <span class="mode-card-title">Darken</span>
+          <span class="mode-pill pill-dark">Category 2</span>
+        </div>
+        <div class="mode-card-body">
+          <p>Comparatively selects the lower RGB value between layers to keep the darkest result. Multiply multiplies the two pixel RGB values, bringing out more contrast and darker colors. Color Burn and Linear Burn impact saturation and brightness via division.</p>
+          <div class="mode-examples">
+            <span class="mode-tag">Darken</span>
+            <span class="mode-tag">Multiply</span>
+            <span class="mode-tag">Color Burn</span>
+            <span class="mode-tag">Linear Burn</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="mode-card">
+        <div class="mode-card-header">
+          <span class="mode-card-title">Lighten</span>
+          <span class="mode-pill pill-light">Category 3</span>
+        </div>
+        <div class="mode-card-body">
+          <p>The opposite of Darken — prioritizes lighting the image and highlighting brightness. Most modes are computationally similar to the Darken category but prioritize higher RGB values to brighten highlights and midtones.</p>
+          <div class="mode-examples">
+            <span class="mode-tag">Lighten</span>
+            <span class="mode-tag">Screen</span>
+            <span class="mode-tag">Color Dodge</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="mode-card">
+        <div class="mode-card-header">
+          <span class="mode-card-title">Contrast</span>
+          <span class="mode-pill pill-contrast">Category 4</span>
+        </div>
+        <div class="mode-card-body">
+          <p>Colors are evaluated on a grayscale at the midpoint (50% gray). Below 50% gets darker; above 50% gets brighter. Overlay combines Screen and Multiply simultaneously. Vivid Light and Linear Light are similar but with opposite directionality.</p>
+          <div class="mode-examples">
+            <span class="mode-tag">Overlay</span>
+            <span class="mode-tag">Vivid Light</span>
+            <span class="mode-tag">Linear Light</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="mode-card">
+        <div class="mode-card-header">
+          <span class="mode-card-title">Comparative</span>
+          <span class="mode-pill pill-compare">Category 5</span>
+        </div>
+        <div class="mode-card-body">
+          <p>Compares the top and base pixels. Divide and Subtract work as their names imply. Difference inverts colors, while Exclusion lowers contrast by not blending blacks.</p>
+          <div class="mode-examples">
+            <span class="mode-tag">Difference</span>
+            <span class="mode-tag">Exclusion</span>
+            <span class="mode-tag">Divide</span>
+            <span class="mode-tag">Subtract</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="mode-card">
+        <div class="mode-card-header">
+          <span class="mode-card-title">HSL</span>
+          <span class="mode-pill pill-hsl">Category 6</span>
+        </div>
+        <div class="mode-card-body">
+          <p>Uses Hue, Saturation, and Luminosity values instead of RGB. Each mode keeps some HSL values from the base and some from the blend layer. Hue keeps the base's luminosity and saturation but adopts the blend layer's hue.</p>
+          <div class="mode-examples">
+            <span class="mode-tag">Hue</span>
+            <span class="mode-tag">Saturation</span>
+            <span class="mode-tag">Color</span>
+            <span class="mode-tag">Luminosity</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">05</div>
+      <h2>Sources</h2>
+    </div>
+    <div class="sources-list">
+      <div class="source-item">
+        <div class="source-dot"></div>
+        <div class="source-text">Adobe. &ldquo;Blending Mode Descriptions.&rdquo; <em>Adobe.com</em>, 2019. helpx.adobe.com/photoshop/desktop/repair-retouch/adjust-light-tone/blending-mode-descriptions.html</div>
+      </div>
+      <div class="source-item">
+        <div class="source-dot"></div>
+        <div class="source-text">Kost, Julieanne. &ldquo;Working with Blend Modes in Photoshop.&rdquo; <em>Julieanne Kost&rsquo;s Blog</em>, 2018. jkost.com/blog/2018/08/working-with-blend-modes-in-photoshop-cc.html</div>
+      </div>
+      <div class="source-item">
+        <div class="source-dot"></div>
+        <div class="source-text">Sucan, Marius. &ldquo;Blending Modes Math Formulas.&rdquo; <em>Sucan.ro Blog</em>, July 2023. marius.sucan.ro/blog/2023/blending-modes-maths/</div>
+      </div>
+      <div class="source-item">
+        <div class="source-dot"></div>
+        <div class="source-text">Thomas, Robert. &ldquo;A Detailed Explanation of How Photoshop Blend Modes Work.&rdquo; <em>Photo Blog Stop</em>, 17 Apr. 2011. photoblogstop.com/photoshop/photoshop-blend-modes-explained/</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">Advanced Interaction Design &mdash; Final Project &mdash; 2026</div>
+
+</div>
+</body>
+</html>
