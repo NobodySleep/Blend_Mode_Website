@@ -22,8 +22,6 @@
       --blue-light: #78b8f0;
       --blue-pale: #a8cfec;
       --blue-ghost: #e6f1fb;
-      --hero-start: #0a2a4a;
-      --hero-end: #2176c9;
       --mono: 'Courier New', Courier, monospace;
       --radius-sm: 6px;
       --radius-md: 10px;
@@ -43,9 +41,8 @@
       padding: 3rem 1.5rem 5rem;
     }
 
-    /* HERO */
     .hero {
-      background: linear-gradient(135deg, var(--hero-start) 0%, #0d3b6e 40%, #1a5fa8 80%, var(--hero-end) 100%);
+      background: linear-gradient(135deg, #0a2a4a 0%, #0d3b6e 40%, #1a5fa8 80%, #2176c9 100%);
       border-radius: var(--radius-lg);
       padding: 3.5rem 3rem 3rem;
       margin-bottom: 3rem;
@@ -56,11 +53,7 @@
       content: '';
       position: absolute;
       inset: 0;
-      background: repeating-linear-gradient(
-        90deg,
-        rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 1px,
-        transparent 1px, transparent 60px
-      );
+      background: repeating-linear-gradient(90deg, rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 1px, transparent 1px, transparent 60px);
     }
     .hero::after {
       content: '';
@@ -71,108 +64,26 @@
       background: rgba(33,118,201,0.12);
       pointer-events: none;
     }
-    .hero-eyebrow {
-      font-family: 'Courier New', monospace;
-      font-size: 11px;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: var(--blue-light);
-      margin-bottom: 1rem;
-    }
-    .hero h1 {
-      font-family: Georgia, serif;
-      font-size: 2.6rem;
-      font-weight: normal;
-      color: #e8f4ff;
-      line-height: 1.15;
-      margin-bottom: 1.25rem;
-    }
+    .hero-eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--blue-light); margin-bottom: 1rem; }
+    .hero h1 { font-family: Georgia, serif; font-size: 2.6rem; font-weight: normal; color: #e8f4ff; line-height: 1.15; margin-bottom: 1.25rem; }
     .hero h1 em { color: var(--blue-light); font-style: normal; }
-    .hero p {
-      font-size: 16px;
-      color: var(--blue-pale);
-      line-height: 1.75;
-      max-width: 580px;
-    }
-    .hero-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 7px;
-      background: rgba(33,118,201,0.3);
-      border: 0.5px solid rgba(120,184,240,0.35);
-      border-radius: var(--radius-sm);
-      padding: 5px 13px;
-      font-family: var(--mono);
-      font-size: 11px;
-      color: var(--blue-pale);
-      margin-top: 1.75rem;
-    }
+    .hero p { font-size: 16px; color: var(--blue-pale); line-height: 1.75; max-width: 580px; }
+    .hero-badge { display: inline-flex; align-items: center; gap: 7px; background: rgba(33,118,201,0.3); border: 0.5px solid rgba(120,184,240,0.35); border-radius: var(--radius-sm); padding: 5px 13px; font-family: var(--mono); font-size: 11px; color: var(--blue-pale); margin-top: 1.75rem; }
 
-    /* TOC */
-    .toc {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-      gap: 10px;
-      margin-bottom: 3.5rem;
-    }
-    .toc-item {
-      background: var(--surface);
-      border: 0.5px solid var(--border);
-      border-radius: var(--radius-md);
-      padding: 14px 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-    }
+    .toc { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 3.5rem; }
+    .toc-item { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-md); padding: 14px 16px; display: flex; flex-direction: column; gap: 5px; }
     .toc-num { font-family: var(--mono); font-size: 10px; color: var(--blue-bright); letter-spacing: 0.05em; }
     .toc-label { font-size: 13px; color: var(--text-primary); font-family: Georgia, serif; }
 
-    /* SECTIONS */
     .section { margin-bottom: 3.5rem; }
-    .section-header {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      margin-bottom: 1.5rem;
-      padding-bottom: 1rem;
-      border-bottom: 0.5px solid var(--border);
-    }
-    .section-num {
-      width: 34px; height: 34px;
-      border-radius: 50%;
-      background: #0d3b6e;
-      color: var(--blue-light);
-      display: flex; align-items: center; justify-content: center;
-      font-family: var(--mono);
-      font-size: 12px;
-      flex-shrink: 0;
-    }
-    .section h2 {
-      font-family: Georgia, serif;
-      font-size: 1.3rem;
-      font-weight: normal;
-      color: var(--text-primary);
-    }
-    .section p {
-      font-size: 15.5px;
-      line-height: 1.8;
-      color: var(--text-secondary);
-      margin-bottom: 1.1rem;
-    }
+    .section-header { display: flex; align-items: center; gap: 14px; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 0.5px solid var(--border); }
+    .section-num { width: 34px; height: 34px; border-radius: 50%; background: #0d3b6e; color: var(--blue-light); display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 12px; flex-shrink: 0; }
+    .section h2 { font-family: Georgia, serif; font-size: 1.3rem; font-weight: normal; color: var(--text-primary); }
+    .section p { font-size: 15.5px; line-height: 1.8; color: var(--text-secondary); margin-bottom: 1.1rem; }
     .section p:last-child { margin-bottom: 0; }
     .section em { color: var(--text-primary); font-style: italic; }
 
-    /* FORMULA */
-    .formula-box {
-      background: #071e36;
-      border: 0.5px solid #1a5fa8;
-      border-radius: var(--radius-lg);
-      padding: 1.75rem 2rem;
-      margin: 1.75rem 0;
-      font-family: var(--mono);
-      font-size: 14px;
-      line-height: 2.1;
-    }
+    .formula-box { background: #071e36; border: 0.5px solid #1a5fa8; border-radius: var(--radius-lg); padding: 1.75rem 2rem; margin: 1.75rem 0; font-family: var(--mono); font-size: 14px; line-height: 2.1; }
     .formula-main { font-size: 17px; color: #e8f4ff; }
     .formula-var { color: var(--blue-light); }
     .formula-divider { height: 0.5px; background: rgba(24,95,165,0.3); margin: 1rem 0; }
@@ -183,74 +94,46 @@
     .fv-desc { color: var(--blue-pale); }
     .formula-note { font-family: Georgia, serif; font-size: 12px; color: #4a7090; margin-top: 1rem; display: block; }
 
-    /* MODE CARDS */
-    .modes-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 12px;
-      margin-top: 1.25rem;
-    }
-    .mode-card {
-      background: var(--surface);
-      border: 0.5px solid var(--border);
-      border-radius: var(--radius-lg);
-      overflow: hidden;
-    }
-    .mode-card-header {
-      padding: 13px 16px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      border-bottom: 0.5px solid var(--border);
-      background: var(--surface2);
-    }
+    .pixel-inspector { border: 0.5px solid var(--border-md); border-radius: var(--radius-lg); overflow: hidden; margin: 1.75rem 0; background: var(--surface); }
+    .pi-header { background: #071e36; padding: 12px 18px; border-bottom: 0.5px solid #1a5fa8; }
+    .pi-header-title { font-family: var(--mono); font-size: 11px; color: var(--blue-light); letter-spacing: 0.1em; text-transform: uppercase; }
+    .pi-body { padding: 18px; display: flex; flex-direction: column; gap: 16px; }
+    .pi-canvas-wrap { position: relative; border-radius: var(--radius-md); overflow: hidden; border: 0.5px solid var(--border); cursor: crosshair; user-select: none; line-height: 0; }
+    #rainbowCanvas { display: block; width: 100%; height: 80px; }
+    .reticle { position: absolute; width: 20px; height: 20px; border: 2px solid white; border-radius: 50%; pointer-events: none; transform: translate(-50%, -50%); display: none; outline: 1px solid rgba(0,0,0,0.4); }
+    .reticle-h { position: absolute; top: 50%; left: -10px; right: -10px; height: 1px; background: white; transform: translateY(-50%); }
+    .reticle-v { position: absolute; left: 50%; top: -10px; bottom: -10px; width: 1px; background: white; transform: translateX(-50%); }
+    .pi-readout { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px; }
+    .pi-chip { background: var(--surface2); border: 0.5px solid var(--border); border-radius: var(--radius-md); padding: 12px 14px; }
+    .pi-chip-label { font-family: var(--mono); font-size: 10px; color: var(--text-muted); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 8px; }
+    .pi-chip-value { font-family: var(--mono); font-size: 14px; color: var(--text-primary); line-height: 1.6; }
+    .pi-swatch { width: 40px; height: 40px; border-radius: var(--radius-sm); border: 0.5px solid var(--border); margin-bottom: 8px; }
+    .pi-hint { font-family: var(--mono); font-size: 11px; color: var(--text-muted); text-align: center; padding: 4px 0; }
+
+    .modes-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-top: 1.25rem; }
+    .mode-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .mode-card-header { padding: 13px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 0.5px solid var(--border); background: var(--surface2); }
     .mode-card-title { font-family: Georgia, serif; font-size: 15px; color: var(--text-primary); }
     .mode-pill { font-family: var(--mono); font-size: 10px; padding: 3px 9px; border-radius: 20px; letter-spacing: 0.04em; }
-    .pill-normal  { background: #dceeff; color: #185fa5; }
-    .pill-dark    { background: #e8e6f7; color: #4a3fa0; }
-    .pill-light   { background: #d8f0e8; color: #0f6e56; }
-    .pill-contrast{ background: #fdefd8; color: #854f0b; }
-    .pill-compare { background: #fde8e8; color: #a32d2d; }
-    .pill-hsl     { background: #e4f0d4; color: #3b6d11; }
+    .pill-normal   { background: #dceeff; color: #185fa5; }
+    .pill-dark     { background: #e8e6f7; color: #4a3fa0; }
+    .pill-light    { background: #d8f0e8; color: #0f6e56; }
+    .pill-contrast { background: #fdefd8; color: #854f0b; }
+    .pill-compare  { background: #fde8e8; color: #a32d2d; }
+    .pill-hsl      { background: #e4f0d4; color: #3b6d11; }
     .mode-card-body { padding: 13px 16px; }
     .mode-card-body p { font-size: 13.5px; line-height: 1.7; color: var(--text-secondary); }
     .mode-examples { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 5px; }
-    .mode-tag {
-      font-family: var(--mono);
-      font-size: 11px;
-      padding: 3px 9px;
-      background: var(--blue-ghost);
-      border: 0.5px solid rgba(55,138,221,0.25);
-      border-radius: 4px;
-      color: var(--blue-mid);
-    }
+    .mode-tag { font-family: var(--mono); font-size: 11px; padding: 3px 9px; background: var(--blue-ghost); border: 0.5px solid rgba(55,138,221,0.25); border-radius: 4px; color: var(--blue-mid); }
 
-    /* SOURCES */
     .sources-list { display: flex; flex-direction: column; gap: 9px; margin-top: 1.25rem; }
-    .source-item {
-      display: flex;
-      gap: 12px;
-      padding: 13px 16px;
-      background: var(--surface);
-      border-radius: var(--radius-md);
-      border: 0.5px solid var(--border);
-    }
+    .source-item { display: flex; gap: 12px; padding: 13px 16px; background: var(--surface); border-radius: var(--radius-md); border: 0.5px solid var(--border); }
     .source-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--blue-bright); margin-top: 7px; flex-shrink: 0; }
     .source-text { font-family: Georgia, serif; font-size: 13.5px; color: var(--text-secondary); line-height: 1.6; }
     .source-text em { font-style: italic; }
 
-    /* DIVIDER */
     .divider { height: 0.5px; background: var(--border); margin: 2.75rem 0; }
-
-    /* FOOTER */
-    .footer {
-      text-align: center;
-      padding-top: 2rem;
-      font-family: var(--mono);
-      font-size: 11px;
-      color: var(--text-muted);
-      letter-spacing: 0.06em;
-    }
+    .footer { text-align: center; padding-top: 2rem; font-family: var(--mono); font-size: 11px; color: var(--text-muted); letter-spacing: 0.06em; }
   </style>
 </head>
 <body>
@@ -291,6 +174,37 @@
     <p>In all art software where the user can manipulate visuals, these RGB values will be frequently changed. When two layers overlap each other, they define a relationship that determines the output of the blend. The top, visible layer manipulates the bottom layer under a certain blend mode, with the modes associated with a formula to output new RGB values.</p>
     <p>Each value is translated to be between 0 and 1, with each calculation being multiplied by 255 for the output. Additionally, any computations exceeding 1, below 0, or leaving a trailing decimal (exceeding 2 decimal places) are normalized to the closest value within the min-max.</p>
     <p>In addition to the RGB pixel values being combined, another factor is considered: <em>opacity</em>. Opacity acts as a linear interpolation of the resulting blended pixels — a modifier that determines how much the computed blend impacts the base layer. This additional factor is called <em>Alpha Compositing</em>. It is vital to note that the blend calculation is not impacted by opacity; rather, the resulting blend pixel is affected by opacity strength.</p>
+
+    <div class="pixel-inspector">
+      <div class="pi-header">
+        <div class="pi-header-title">&#9632; Pixel Inspector &mdash; click anywhere on the gradient</div>
+      </div>
+      <div class="pi-body">
+        <div class="pi-canvas-wrap" id="canvasWrap">
+          <canvas id="rainbowCanvas"></canvas>
+          <div class="reticle" id="reticle">
+            <div class="reticle-h"></div>
+            <div class="reticle-v"></div>
+          </div>
+        </div>
+        <div class="pi-hint" id="piHint">Click any point on the gradient to inspect its pixel values</div>
+        <div class="pi-readout" id="piReadout" style="display:none;">
+          <div class="pi-chip">
+            <div class="pi-chip-label">Sampled color</div>
+            <div class="pi-swatch" id="piSwatch"></div>
+            <div class="pi-chip-value" id="piHex"></div>
+          </div>
+          <div class="pi-chip">
+            <div class="pi-chip-label">RGB</div>
+            <div class="pi-chip-value" id="piRGB"></div>
+          </div>
+          <div class="pi-chip">
+            <div class="pi-chip-label">HSL</div>
+            <div class="pi-chip-value" id="piHSL"></div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div class="divider"></div>
@@ -322,7 +236,8 @@
       <div class="section-num">04</div>
       <h2>Blend Mode Categories</h2>
     </div>
-    <p>There are six general categories of blend modes. Various blend mode functions are relatively simple arithmetic, but some lean on a bit of complexity.</p>
+    <p>There are six general categories of blend modes in Photoshop, containing 27 distinct modes in total. Various blend mode functions are relatively simple arithmetic, but some lean on a bit of complexity.</p>
+
     <div class="modes-grid">
 
       <div class="mode-card">
@@ -331,7 +246,7 @@
           <span class="mode-pill pill-normal">Category 1</span>
         </div>
         <div class="mode-card-body">
-          <p>Blending occurs only with the impact of opacity — no blend function equation is applied. Dissolve randomly scatters pixels based on opacity strength, but does not alter RGB values.</p>
+          <p>Blending occurs only with the impact of opacity — no blend function equation is applied. Dissolve randomly scatters pixels based on opacity strength without altering RGB values.</p>
           <div class="mode-examples">
             <span class="mode-tag">Normal</span>
             <span class="mode-tag">Dissolve</span>
@@ -345,12 +260,13 @@
           <span class="mode-pill pill-dark">Category 2</span>
         </div>
         <div class="mode-card-body">
-          <p>Comparatively selects the lower RGB value between layers to keep the darkest result. Multiply multiplies the two pixel RGB values, bringing out more contrast and darker colors. Color Burn and Linear Burn impact saturation and brightness via division.</p>
+          <p>Selects the lower RGB value between layers, keeping the darkest result per channel. Multiply multiplies both values together. Color Burn and Linear Burn increase contrast and darken via division and subtraction. Darker Color compares composite luminosity rather than individual channels.</p>
           <div class="mode-examples">
             <span class="mode-tag">Darken</span>
             <span class="mode-tag">Multiply</span>
             <span class="mode-tag">Color Burn</span>
             <span class="mode-tag">Linear Burn</span>
+            <span class="mode-tag">Darker Color</span>
           </div>
         </div>
       </div>
@@ -361,11 +277,13 @@
           <span class="mode-pill pill-light">Category 3</span>
         </div>
         <div class="mode-card-body">
-          <p>The opposite of Darken — prioritizes lighting the image and highlighting brightness. Most modes are computationally similar to the Darken category but prioritize higher RGB values to brighten highlights and midtones.</p>
+          <p>The opposite of Darken — prioritizes higher RGB values to brighten highlights and midtones. Screen inverts, multiplies, then inverts again. Color Dodge and Linear Dodge (Add) brighten the base by dividing or adding the blend value. Lighter Color compares composite luminosity.</p>
           <div class="mode-examples">
             <span class="mode-tag">Lighten</span>
             <span class="mode-tag">Screen</span>
             <span class="mode-tag">Color Dodge</span>
+            <span class="mode-tag">Linear Dodge (Add)</span>
+            <span class="mode-tag">Lighter Color</span>
           </div>
         </div>
       </div>
@@ -376,11 +294,15 @@
           <span class="mode-pill pill-contrast">Category 4</span>
         </div>
         <div class="mode-card-body">
-          <p>Colors are evaluated on a grayscale at the midpoint (50% gray). Below 50% gets darker; above 50% gets brighter. Overlay combines Screen and Multiply simultaneously. Vivid Light and Linear Light are similar but with opposite directionality.</p>
+          <p>Colors are evaluated against the 50% gray midpoint — below darkens, above lightens. Overlay applies Multiply to darks and Screen to lights. Soft Light is a gentler version. Hard Light reverses the layer roles. Vivid, Linear, and Pin Light each combine dodging and burning differently. Hard Mix posterizes to pure primaries.</p>
           <div class="mode-examples">
             <span class="mode-tag">Overlay</span>
+            <span class="mode-tag">Soft Light</span>
+            <span class="mode-tag">Hard Light</span>
             <span class="mode-tag">Vivid Light</span>
             <span class="mode-tag">Linear Light</span>
+            <span class="mode-tag">Pin Light</span>
+            <span class="mode-tag">Hard Mix</span>
           </div>
         </div>
       </div>
@@ -391,12 +313,12 @@
           <span class="mode-pill pill-compare">Category 5</span>
         </div>
         <div class="mode-card-body">
-          <p>Compares the top and base pixels. Divide and Subtract work as their names imply. Difference inverts colors, while Exclusion lowers contrast by not blending blacks.</p>
+          <p>Compares the top and base pixels mathematically. Difference subtracts and takes the absolute value, inverting colors. Exclusion lowers contrast by reducing the effect on midtones. Subtract and Divide apply their respective operations directly to each channel.</p>
           <div class="mode-examples">
             <span class="mode-tag">Difference</span>
             <span class="mode-tag">Exclusion</span>
-            <span class="mode-tag">Divide</span>
             <span class="mode-tag">Subtract</span>
+            <span class="mode-tag">Divide</span>
           </div>
         </div>
       </div>
@@ -407,7 +329,7 @@
           <span class="mode-pill pill-hsl">Category 6</span>
         </div>
         <div class="mode-card-body">
-          <p>Uses Hue, Saturation, and Luminosity values instead of RGB. Each mode keeps some HSL values from the base and some from the blend layer. Hue keeps the base's luminosity and saturation but adopts the blend layer's hue.</p>
+          <p>Operates on Hue, Saturation, and Luminosity rather than RGB. Hue applies the blend layer's hue to the base's saturation and luminosity. Saturation applies only the saturation. Color applies both hue and saturation. Luminosity applies only the luminosity, preserving the base's color.</p>
           <div class="mode-examples">
             <span class="mode-tag">Hue</span>
             <span class="mode-tag">Saturation</span>
@@ -450,5 +372,95 @@
   <div class="footer">Advanced Interaction Design &mdash; Final Project &mdash; 2026</div>
 
 </div>
+
+<script>
+  const canvas = document.getElementById('rainbowCanvas');
+  const wrap = document.getElementById('canvasWrap');
+  const reticle = document.getElementById('reticle');
+  const piHint = document.getElementById('piHint');
+  const piReadout = document.getElementById('piReadout');
+  const piSwatch = document.getElementById('piSwatch');
+  const piHex = document.getElementById('piHex');
+  const piRGB = document.getElementById('piRGB');
+  const piHSL = document.getElementById('piHSL');
+
+  function drawRainbow() {
+    const W = wrap.clientWidth;
+    const H = 80;
+    canvas.width = W;
+    canvas.height = H;
+    const ctx = canvas.getContext('2d');
+    const grad = ctx.createLinearGradient(0, 0, W, 0);
+    grad.addColorStop(0,    'hsl(0,100%,50%)');
+    grad.addColorStop(0.17, 'hsl(60,100%,50%)');
+    grad.addColorStop(0.33, 'hsl(120,100%,50%)');
+    grad.addColorStop(0.5,  'hsl(180,100%,50%)');
+    grad.addColorStop(0.67, 'hsl(240,100%,50%)');
+    grad.addColorStop(0.83, 'hsl(300,100%,50%)');
+    grad.addColorStop(1,    'hsl(360,100%,50%)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  function rgbToHsl(r, g, b) {
+    r /= 255; g /= 255; b /= 255;
+    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+    let h = 0, s = 0, l = (max + min) / 2;
+    if (max !== min) {
+      const d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      switch (max) {
+        case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+        case g: h = ((b - r) / d + 2) / 6; break;
+        case b: h = ((r - g) / d + 4) / 6; break;
+      }
+    }
+    return [Math.round(h * 360), Math.round(s * 100), Math.round(l * 100)];
+  }
+
+  function toHex(r, g, b) {
+    return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0').toUpperCase()).join('');
+  }
+
+  function getPos(e) {
+    const rect = wrap.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    return {
+      x: Math.min(Math.max(Math.round((clientX - rect.left) * (canvas.width / rect.width)), 0), canvas.width - 1),
+      y: Math.min(Math.max(Math.round((clientY - rect.top) * (canvas.height / rect.height)), 0), canvas.height - 1),
+      pctX: Math.min(Math.max(((clientX - rect.left) / rect.width) * 100, 0), 100),
+      pctY: Math.min(Math.max(((clientY - rect.top) / rect.height) * 100, 0), 100)
+    };
+  }
+
+  function inspect(e) {
+    const { x, y, pctX, pctY } = getPos(e);
+    const ctx = canvas.getContext('2d');
+    const px = ctx.getImageData(x, y, 1, 1).data;
+    const r = px[0], g = px[1], b = px[2];
+    const [h, s, l] = rgbToHsl(r, g, b);
+    const hex = toHex(r, g, b);
+
+    reticle.style.left = pctX + '%';
+    reticle.style.top = pctY + '%';
+    reticle.style.display = 'block';
+
+    piSwatch.style.background = 'rgb(' + r + ',' + g + ',' + b + ')';
+    piHex.textContent = hex;
+    piRGB.innerHTML = 'R: ' + r + '<br>G: ' + g + '<br>B: ' + b;
+    piHSL.innerHTML = 'H: ' + h + '&deg;<br>S: ' + s + '%<br>L: ' + l + '%';
+
+    piHint.style.display = 'none';
+    piReadout.style.display = 'grid';
+  }
+
+  wrap.addEventListener('click', inspect);
+  wrap.addEventListener('mousemove', function(e) { if (e.buttons === 1) inspect(e); });
+  wrap.addEventListener('touchmove', function(e) { e.preventDefault(); inspect(e); }, { passive: false });
+
+  drawRainbow();
+  window.addEventListener('resize', drawRainbow);
+</script>
 </body>
 </html>
