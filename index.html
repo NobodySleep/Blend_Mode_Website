@@ -1,466 +1,755 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>How Blending Modes Work — Pixel Value Arithmetic</title>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How Blending Modes Work — Pixel Value Arithmetic</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f4f7fb;--surface:#fff;--surface2:#f0f4fa;
+  --border:rgba(24,95,165,0.15);--border-md:rgba(24,95,165,0.3);
+  --text:#0d1f33;--text2:#4a6080;--text3:#7a94b0;
+  --bblue:#042c53;--bmid:#185fa5;--bbright:#378ADD;--blight:#78b8f0;--bpale:#a8cfec;--bghost:#e6f1fb;
+  --mono:'Courier New',Courier,monospace;
+  --r-sm:6px;--r-md:10px;--r-lg:14px;
+  --cyan:#00ffcc;--cyandim:rgba(0,255,204,0.15);
+}
+body{font-family:Georgia,'Times New Roman',serif;background:var(--bg);color:var(--text);line-height:1.7}
+.site{max-width:860px;margin:0 auto;padding:3rem 1.5rem 5rem}
 
-    :root {
-      --bg: #f4f7fb;
-      --surface: #ffffff;
-      --surface2: #f0f4fa;
-      --border: rgba(24, 95, 165, 0.15);
-      --border-md: rgba(24, 95, 165, 0.25);
-      --text-primary: #0d1f33;
-      --text-secondary: #4a6080;
-      --text-muted: #7a94b0;
-      --blue-dark: #042c53;
-      --blue-mid: #185fa5;
-      --blue-bright: #378ADD;
-      --blue-light: #78b8f0;
-      --blue-pale: #a8cfec;
-      --blue-ghost: #e6f1fb;
-      --mono: 'Courier New', Courier, monospace;
-      --radius-sm: 6px;
-      --radius-md: 10px;
-      --radius-lg: 14px;
-    }
+.hero{background:linear-gradient(135deg,#0a2a4a 0%,#0d3b6e 40%,#1a5fa8 80%,#2176c9 100%);border-radius:var(--r-lg);padding:3.5rem 3rem 3rem;margin-bottom:3rem;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(255,255,255,0.03) 0px,rgba(255,255,255,0.03) 1px,transparent 1px,transparent 60px)}
+.hero-eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--blight);margin-bottom:1rem}
+.hero h1{font-size:2.6rem;font-weight:normal;color:#e8f4ff;line-height:1.15;margin-bottom:1.25rem}
+.hero h1 em{color:var(--blight);font-style:normal}
+.hero p{font-size:16px;color:var(--bpale);line-height:1.75;max-width:580px}
+.hero-badge{display:inline-flex;align-items:center;gap:7px;background:rgba(33,118,201,0.3);border:.5px solid rgba(120,184,240,0.35);border-radius:var(--r-sm);padding:5px 13px;font-family:var(--mono);font-size:11px;color:var(--bpale);margin-top:1.75rem}
 
-    body {
-      font-family: Georgia, 'Times New Roman', serif;
-      background: var(--bg);
-      color: var(--text-primary);
-      line-height: 1.7;
-    }
+.toc{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:3.5rem}
+.toc-item{background:var(--surface);border:.5px solid var(--border);border-radius:var(--r-md);padding:14px 16px;display:flex;flex-direction:column;gap:5px}
+.toc-num{font-family:var(--mono);font-size:10px;color:var(--bbright);letter-spacing:.05em}
+.toc-label{font-size:13px;color:var(--text)}
 
-    .site {
-      max-width: 860px;
-      margin: 0 auto;
-      padding: 3rem 1.5rem 5rem;
-    }
+.section{margin-bottom:3.5rem}
+.section-header{display:flex;align-items:center;gap:14px;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:.5px solid var(--border)}
+.section-num{width:34px;height:34px;border-radius:50%;background:#0d3b6e;color:var(--blight);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:12px;flex-shrink:0}
+.section h2{font-size:1.3rem;font-weight:normal;color:var(--text)}
+.section p{font-size:15.5px;line-height:1.8;color:var(--text2);margin-bottom:1.1rem}
+.section p:last-child{margin-bottom:0}
+.section em{color:var(--text);font-style:italic}
 
-    .hero {
-      background: linear-gradient(135deg, #0a2a4a 0%, #0d3b6e 40%, #1a5fa8 80%, #2176c9 100%);
-      border-radius: var(--radius-lg);
-      padding: 3.5rem 3rem 3rem;
-      margin-bottom: 3rem;
-      position: relative;
-      overflow: hidden;
-    }
-    .hero::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: repeating-linear-gradient(90deg, rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 1px, transparent 1px, transparent 60px);
-    }
-    .hero::after {
-      content: '';
-      position: absolute;
-      bottom: -40px; right: -40px;
-      width: 220px; height: 220px;
-      border-radius: 50%;
-      background: rgba(33,118,201,0.12);
-      pointer-events: none;
-    }
-    .hero-eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--blue-light); margin-bottom: 1rem; }
-    .hero h1 { font-family: Georgia, serif; font-size: 2.6rem; font-weight: normal; color: #e8f4ff; line-height: 1.15; margin-bottom: 1.25rem; }
-    .hero h1 em { color: var(--blue-light); font-style: normal; }
-    .hero p { font-size: 16px; color: var(--blue-pale); line-height: 1.75; max-width: 580px; }
-    .hero-badge { display: inline-flex; align-items: center; gap: 7px; background: rgba(33,118,201,0.3); border: 0.5px solid rgba(120,184,240,0.35); border-radius: var(--radius-sm); padding: 5px 13px; font-family: var(--mono); font-size: 11px; color: var(--blue-pale); margin-top: 1.75rem; }
+.formula-box{background:#071e36;border:.5px solid #1a5fa8;border-radius:var(--r-lg);padding:1.75rem 2rem;margin:1.75rem 0;font-family:var(--mono);font-size:14px;line-height:2.1}
+.formula-main{font-size:17px;color:#e8f4ff}
+.fvar{color:var(--blight)}
+.fdiv{height:.5px;background:rgba(24,95,165,0.3);margin:1rem 0}
+.fvars{display:flex;flex-direction:column;gap:5px}
+.fvrow{display:flex;gap:10px;align-items:baseline;font-size:13px}
+.fvk{color:var(--blight);min-width:60px}
+.fveq{color:#3a6080}
+.fvd{color:var(--bpale)}
+.fnote{font-family:Georgia,serif;font-size:12px;color:#4a7090;margin-top:1rem;display:block}
 
-    .toc { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 3.5rem; }
-    .toc-item { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-md); padding: 14px 16px; display: flex; flex-direction: column; gap: 5px; }
-    .toc-num { font-family: var(--mono); font-size: 10px; color: var(--blue-bright); letter-spacing: 0.05em; }
-    .toc-label { font-size: 13px; color: var(--text-primary); font-family: Georgia, serif; }
+/* ══ PIXEL INSPECTOR ══ */
+.pi-wrap{border:.5px solid var(--border-md);border-radius:var(--r-lg);overflow:hidden;margin:1.75rem 0;background:#040f1c}
+.pi-header{padding:10px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:.5px solid #1a3a5c}
+.pi-title{font-family:var(--mono);font-size:10px;color:var(--blight);letter-spacing:.12em;text-transform:uppercase}
+.pi-body{padding:16px}
+.pi-canvas-area{position:relative;border-radius:var(--r-sm);overflow:hidden;line-height:0;cursor:crosshair;user-select:none}
+#rainbowCanvas{display:block;width:100%;height:90px}
+.pi-canvas-area::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,255,200,0.03) 3px,rgba(0,255,200,0.03) 4px);pointer-events:none}
 
-    .section { margin-bottom: 3.5rem; }
-    .section-header { display: flex; align-items: center; gap: 14px; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 0.5px solid var(--border); }
-    .section-num { width: 34px; height: 34px; border-radius: 50%; background: #0d3b6e; color: var(--blue-light); display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 12px; flex-shrink: 0; }
-    .section h2 { font-family: Georgia, serif; font-size: 1.3rem; font-weight: normal; color: var(--text-primary); }
-    .section p { font-size: 15.5px; line-height: 1.8; color: var(--text-secondary); margin-bottom: 1.1rem; }
-    .section p:last-child { margin-bottom: 0; }
-    .section em { color: var(--text-primary); font-style: italic; }
+.reticle{position:absolute;width:22px;height:22px;border-radius:50%;pointer-events:none;transform:translate(-50%,-50%);display:none}
+.reticle-ring{position:absolute;inset:0;border-radius:50%;border:1.5px solid var(--cyan);animation:rPulse 1.4s ease-in-out infinite}
+.reticle-outer{position:absolute;inset:-6px;border-radius:50%;border:.5px solid rgba(0,255,204,0.3);animation:rPulse 1.4s ease-in-out infinite reverse}
+.reticle-h{position:absolute;top:50%;left:-14px;right:-14px;height:.5px;background:rgba(0,255,204,0.7);transform:translateY(-50%)}
+.reticle-v{position:absolute;left:50%;top:-14px;bottom:-14px;width:.5px;background:rgba(0,255,204,0.7);transform:translateX(-50%)}
+.reticle-dot{position:absolute;top:50%;left:50%;width:3px;height:3px;background:var(--cyan);border-radius:50%;transform:translate(-50%,-50%)}
+@keyframes rPulse{0%,100%{opacity:1}50%{opacity:.4}}
 
-    .formula-box { background: #071e36; border: 0.5px solid #1a5fa8; border-radius: var(--radius-lg); padding: 1.75rem 2rem; margin: 1.75rem 0; font-family: var(--mono); font-size: 14px; line-height: 2.1; }
-    .formula-main { font-size: 17px; color: #e8f4ff; }
-    .formula-var { color: var(--blue-light); }
-    .formula-divider { height: 0.5px; background: rgba(24,95,165,0.3); margin: 1rem 0; }
-    .formula-vars { display: flex; flex-direction: column; gap: 5px; }
-    .formula-var-row { display: flex; gap: 10px; align-items: baseline; font-size: 13px; }
-    .fv-key { color: var(--blue-light); min-width: 60px; }
-    .fv-eq { color: #3a6080; }
-    .fv-desc { color: var(--blue-pale); }
-    .formula-note { font-family: Georgia, serif; font-size: 12px; color: #4a7090; margin-top: 1rem; display: block; }
+.corner{position:absolute;width:10px;height:10px;pointer-events:none}
+.corner-tl{top:4px;left:4px;border-top:1px solid var(--cyan);border-left:1px solid var(--cyan)}
+.corner-tr{top:4px;right:4px;border-top:1px solid var(--cyan);border-right:1px solid var(--cyan)}
+.corner-bl{bottom:4px;left:4px;border-bottom:1px solid var(--cyan);border-left:1px solid var(--cyan)}
+.corner-br{bottom:4px;right:4px;border-bottom:1px solid var(--cyan);border-right:1px solid var(--cyan)}
 
-    .pixel-inspector { border: 0.5px solid var(--border-md); border-radius: var(--radius-lg); overflow: hidden; margin: 1.75rem 0; background: var(--surface); }
-    .pi-header { background: #071e36; padding: 12px 18px; border-bottom: 0.5px solid #1a5fa8; }
-    .pi-header-title { font-family: var(--mono); font-size: 11px; color: var(--blue-light); letter-spacing: 0.1em; text-transform: uppercase; }
-    .pi-body { padding: 18px; display: flex; flex-direction: column; gap: 16px; }
-    .pi-canvas-wrap { position: relative; border-radius: var(--radius-md); overflow: hidden; border: 0.5px solid var(--border); cursor: crosshair; user-select: none; line-height: 0; }
-    #rainbowCanvas { display: block; width: 100%; height: 80px; }
-    .reticle { position: absolute; width: 20px; height: 20px; border: 2px solid white; border-radius: 50%; pointer-events: none; transform: translate(-50%, -50%); display: none; outline: 1px solid rgba(0,0,0,0.4); }
-    .reticle-h { position: absolute; top: 50%; left: -10px; right: -10px; height: 1px; background: white; transform: translateY(-50%); }
-    .reticle-v { position: absolute; left: 50%; top: -10px; bottom: -10px; width: 1px; background: white; transform: translateX(-50%); }
-    .pi-readout { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px; }
-    .pi-chip { background: var(--surface2); border: 0.5px solid var(--border); border-radius: var(--radius-md); padding: 12px 14px; }
-    .pi-chip-label { font-family: var(--mono); font-size: 10px; color: var(--text-muted); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 8px; }
-    .pi-chip-value { font-family: var(--mono); font-size: 14px; color: var(--text-primary); line-height: 1.6; }
-    .pi-swatch { width: 40px; height: 40px; border-radius: var(--radius-sm); border: 0.5px solid var(--border); margin-bottom: 8px; }
-    .pi-hint { font-family: var(--mono); font-size: 11px; color: var(--text-muted); text-align: center; padding: 4px 0; }
+.pi-controls{display:flex;flex-direction:column;gap:12px;margin-top:14px}
+.pi-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.pi-label{font-family:var(--mono);font-size:10px;color:#4a8090;letter-spacing:.08em;text-transform:uppercase;min-width:80px}
+input[type=range].pi-range{flex:1;min-width:120px;height:3px;-webkit-appearance:none;background:linear-gradient(90deg,#0a4a5a,#00ffcc);border-radius:2px;cursor:pointer}
+input[type=range].pi-range::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--cyan);border:2px solid #040f1c;cursor:pointer}
+.pi-val{font-family:var(--mono);font-size:11px;color:var(--cyan);min-width:30px;text-align:right}
 
-    .modes-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-top: 1.25rem; }
-    .mode-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
-    .mode-card-header { padding: 13px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 0.5px solid var(--border); background: var(--surface2); }
-    .mode-card-title { font-family: Georgia, serif; font-size: 15px; color: var(--text-primary); }
-    .mode-pill { font-family: var(--mono); font-size: 10px; padding: 3px 9px; border-radius: 20px; letter-spacing: 0.04em; }
-    .pill-normal   { background: #dceeff; color: #185fa5; }
-    .pill-dark     { background: #e8e6f7; color: #4a3fa0; }
-    .pill-light    { background: #d8f0e8; color: #0f6e56; }
-    .pill-contrast { background: #fdefd8; color: #854f0b; }
-    .pill-compare  { background: #fde8e8; color: #a32d2d; }
-    .pill-hsl      { background: #e4f0d4; color: #3b6d11; }
-    .mode-card-body { padding: 13px 16px; }
-    .mode-card-body p { font-size: 13.5px; line-height: 1.7; color: var(--text-secondary); }
-    .mode-examples { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 5px; }
-    .mode-tag { font-family: var(--mono); font-size: 11px; padding: 3px 9px; background: var(--blue-ghost); border: 0.5px solid rgba(55,138,221,0.25); border-radius: 4px; color: var(--blue-mid); }
+.pi-readout{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:14px}
+.pi-chip{background:#071e36;border:.5px solid #1a3a5c;border-radius:var(--r-sm);padding:10px 12px}
+.pi-chip-label{font-family:var(--mono);font-size:9px;color:#2a6080;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
+.pi-chip-val{font-family:var(--mono);font-size:13px;color:#a8cfec;line-height:1.6}
+.pi-swatch{width:36px;height:36px;border-radius:4px;border:.5px solid #1a3a5c;margin-bottom:6px}
+.pi-hint{font-family:var(--mono);font-size:10px;color:#2a5070;text-align:center;padding:6px 0;letter-spacing:.06em}
 
-    .sources-list { display: flex; flex-direction: column; gap: 9px; margin-top: 1.25rem; }
-    .source-item { display: flex; gap: 12px; padding: 13px 16px; background: var(--surface); border-radius: var(--radius-md); border: 0.5px solid var(--border); }
-    .source-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--blue-bright); margin-top: 7px; flex-shrink: 0; }
-    .source-text { font-family: Georgia, serif; font-size: 13.5px; color: var(--text-secondary); line-height: 1.6; }
-    .source-text em { font-style: italic; }
+.save-row{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.save-slot{display:flex;align-items:center;gap:8px;background:#071e36;border:.5px solid #1a3a5c;border-radius:var(--r-sm);padding:8px 12px;flex:1;min-width:140px}
+.save-swatch{width:28px;height:28px;border-radius:4px;border:.5px solid #1a3a5c;background:#111;flex-shrink:0;transition:background .2s}
+.save-info{flex:1}
+.save-label{font-family:var(--mono);font-size:9px;color:#2a6080;letter-spacing:.08em;text-transform:uppercase}
+.save-hex{font-family:var(--mono);font-size:12px;color:#78b8f0}
+.save-btn{font-family:var(--mono);font-size:10px;color:var(--cyan);background:transparent;border:.5px solid var(--cyan);border-radius:4px;padding:4px 10px;cursor:pointer;letter-spacing:.06em;transition:background .15s}
+.save-btn:hover{background:var(--cyandim)}
 
-    .divider { height: 0.5px; background: var(--border); margin: 2.75rem 0; }
-    .footer { text-align: center; padding-top: 2rem; font-family: var(--mono); font-size: 11px; color: var(--text-muted); letter-spacing: 0.06em; }
-  </style>
+/* ══ VENN ══ */
+.venn-wrap{border:.5px solid var(--border-md);border-radius:var(--r-lg);overflow:hidden;margin:1.75rem 0;background:#040f1c}
+.venn-header{padding:10px 18px;border-bottom:.5px solid #1a3a5c;display:flex;align-items:center;justify-content:space-between}
+.venn-title{font-family:var(--mono);font-size:10px;color:var(--blight);letter-spacing:.12em;text-transform:uppercase}
+.venn-body{padding:20px}
+.venn-canvas-wrap{display:flex;align-items:center;justify-content:center}
+#vennCanvas{display:block;max-width:100%}
+.venn-mode-label{font-family:var(--mono);font-size:11px;color:var(--cyan);text-align:center;margin-top:10px;min-height:18px;letter-spacing:.06em}
+
+.blend-options{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;justify-content:center}
+.blend-btn{font-family:var(--mono);font-size:11px;background:#071e36;border:.5px solid #1a3a5c;border-radius:var(--r-sm);padding:7px 14px;color:#78b8f0;cursor:pointer;letter-spacing:.05em;transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:3px}
+.blend-btn:hover{border-color:#378ADD;color:#e8f4ff}
+.blend-btn.active{border-color:var(--cyan);color:var(--cyan);background:#071e36}
+.blend-btn-cat{font-size:8px;color:#2a6080;letter-spacing:.1em;text-transform:uppercase}
+.blend-btn.active .blend-btn-cat{color:#006650}
+
+.venn-reset-btn{font-family:var(--mono);font-size:10px;color:#4a6080;background:transparent;border:.5px solid #1a3a5c;border-radius:4px;padding:4px 12px;cursor:pointer;letter-spacing:.06em;transition:all .15s}
+.venn-reset-btn:hover{color:#78b8f0;border-color:#378ADD}
+.venn-no-color{font-family:var(--mono);font-size:11px;color:#2a5070;text-align:center;padding:12px;border:.5px dashed #1a3a5c;border-radius:var(--r-sm);margin-bottom:8px}
+
+/* ══ EQUATION OUTPUT ══ */
+.eq-panel{background:#020c17;border:.5px solid #0d3050;border-radius:var(--r-md);padding:14px 18px;margin-top:16px;display:none}
+.eq-panel.visible{display:block}
+.eq-header-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.eq-badge{font-family:var(--mono);font-size:9px;color:#2a6080;letter-spacing:.12em;text-transform:uppercase;display:flex;align-items:center;gap:6px}
+.eq-badge-dot{width:5px;height:5px;border-radius:50%;background:var(--cyan)}
+.eq-mode-name{font-family:var(--mono);font-size:10px;color:var(--cyan)}
+.eq-channels{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.eq-ch{background:#071e36;border:.5px solid #0d3050;border-radius:var(--r-sm);padding:10px 12px}
+.eq-ch-name{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.eq-ch-r .eq-ch-name{color:#ff6b6b}
+.eq-ch-g .eq-ch-name{color:#6bffb8}
+.eq-ch-b .eq-ch-name{color:#6bb5ff}
+.eq-line{font-family:var(--mono);font-size:11px;color:#4a7090;line-height:1.9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.eq-line .ev{color:#a8cfec}
+.eq-line .eop{color:#4a90b0}
+.eq-line .eres{color:var(--cyan);font-size:12px}
+.eq-line .enorm{color:#2a6080;font-size:10px}
+.eq-formula-line{font-family:var(--mono);font-size:10px;color:#1a5070;margin-bottom:10px;padding-bottom:8px;border-bottom:.5px solid #0d2a40}
+.eq-formula-line span{color:#2a7090}
+
+/* MODE CARDS */
+.modes-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-top:1.25rem}
+.mode-card{background:var(--surface);border:.5px solid var(--border);border-radius:var(--r-lg);overflow:hidden}
+.mode-card-header{padding:13px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:.5px solid var(--border);background:var(--surface2)}
+.mode-card-title{font-size:15px;color:var(--text)}
+.mode-pill{font-family:var(--mono);font-size:10px;padding:3px 9px;border-radius:20px;letter-spacing:.04em}
+.pill-normal{background:#dceeff;color:#185fa5}
+.pill-dark{background:#e8e6f7;color:#4a3fa0}
+.pill-light{background:#d8f0e8;color:#0f6e56}
+.pill-contrast{background:#fdefd8;color:#854f0b}
+.pill-compare{background:#fde8e8;color:#a32d2d}
+.pill-hsl{background:#e4f0d4;color:#3b6d11}
+.mode-card-body{padding:13px 16px}
+.mode-card-body p{font-size:13.5px;line-height:1.7;color:var(--text2)}
+.mode-examples{margin-top:10px;display:flex;flex-wrap:wrap;gap:5px}
+.mode-tag{font-family:var(--mono);font-size:11px;padding:3px 9px;background:var(--bghost);border:.5px solid rgba(55,138,221,0.25);border-radius:4px;color:var(--bmid)}
+
+.sources-list{display:flex;flex-direction:column;gap:9px;margin-top:1.25rem}
+.source-item{display:flex;gap:12px;padding:13px 16px;background:var(--surface);border-radius:var(--r-md);border:.5px solid var(--border)}
+.source-dot{width:6px;height:6px;border-radius:50%;background:var(--bbright);margin-top:7px;flex-shrink:0}
+.source-text{font-size:13.5px;color:var(--text2);line-height:1.6}
+.source-text em{font-style:italic}
+
+.divider{height:.5px;background:var(--border);margin:2.75rem 0}
+.footer{text-align:center;padding-top:2rem;font-family:var(--mono);font-size:11px;color:var(--text3);letter-spacing:.06em}
+</style>
 </head>
 <body>
 <div class="site">
 
-  <div class="hero">
-    <div class="hero-eyebrow">Advanced Interaction Design &mdash; Final</div>
-    <h1>How <em>Blending Modes</em> Work</h1>
-    <p>Most digital art software programs contain some form of blend modes to manipulate and combine two layers. Underneath the surface lie thousands of calculations made sequentially at high speeds — one per overlapping pixel.</p>
-    <div class="hero-badge">&#9632; Pixel Value Arithmetic</div>
-  </div>
+<div class="hero">
+  <div class="hero-eyebrow">Advanced Interaction Design &mdash; Final</div>
+  <h1>How <em>Blending Modes</em> Work</h1>
+  <p>Most digital art software programs contain some form of blend modes to manipulate and combine two layers. Underneath the surface lie thousands of calculations made sequentially at high speeds &mdash; one per overlapping pixel.</p>
+  <div class="hero-badge">&#9632; Pixel Value Arithmetic</div>
+</div>
 
-  <div class="toc">
-    <div class="toc-item"><span class="toc-num">01</span><span class="toc-label">Introduction</span></div>
-    <div class="toc-item"><span class="toc-num">02</span><span class="toc-label">RGB Values</span></div>
-    <div class="toc-item"><span class="toc-num">03</span><span class="toc-label">The Formula</span></div>
-    <div class="toc-item"><span class="toc-num">04</span><span class="toc-label">Blend Modes</span></div>
-    <div class="toc-item"><span class="toc-num">05</span><span class="toc-label">Sources</span></div>
-  </div>
+<div class="toc">
+  <div class="toc-item"><span class="toc-num">01</span><span class="toc-label">Introduction</span></div>
+  <div class="toc-item"><span class="toc-num">02</span><span class="toc-label">RGB Values</span></div>
+  <div class="toc-item"><span class="toc-num">03</span><span class="toc-label">The Formula</span></div>
+  <div class="toc-item"><span class="toc-num">04</span><span class="toc-label">Blend Modes</span></div>
+  <div class="toc-item"><span class="toc-num">05</span><span class="toc-label">Sources</span></div>
+</div>
 
-  <div class="section">
-    <div class="section-header">
-      <div class="section-num">01</div>
-      <h2>Introduction</h2>
+<div class="section">
+  <div class="section-header"><div class="section-num">01</div><h2>Introduction</h2></div>
+  <p>Blend modes allow for many effects that are specifically altered by the top layer and a certain blend tool, transforming the bottom layer. These modes allow for effects like recoloring, adding shadows and highlights, increasing contrast, and more.</p>
+  <p>By understanding the math behind blend modes, an artist can improve their eye for detail to achieve a desired effect with more intention. Every overlapping pixel between two layers undergoes an arithmetic calculation to output a new pixel value &mdash; based on the initial colors and which of the six general categories of blend mode is utilized.</p>
+</div>
+
+<div class="divider"></div>
+
+<div class="section">
+  <div class="section-header"><div class="section-num">02</div><h2>RGB Values and General Calculation</h2></div>
+  <p>Monitors exclusively utilize RGB values to determine pixel color and process it for calculation and display. Each value &mdash; red, green, and blue &mdash; has a numerical value stating the strength of that primary in the combined color. A monitor can have hundreds of thousands of pixels, each set with RGB values that, overall, create a picture on a display.</p>
+  <p>In all art software where the user can manipulate visuals, these RGB values will be frequently changed. When two layers overlap each other, they define a relationship that determines the output of the blend. The top, visible layer manipulates the bottom layer under a certain blend mode, with the modes associated with a formula to output new RGB values.</p>
+  <p>Each value is translated to be between 0 and 1, with each calculation being multiplied by 255 for the output. Any computations exceeding 1, below 0, or leaving a trailing decimal exceeding 2 decimal places are normalized to the closest value within the min-max.</p>
+  <p>In addition to the RGB pixel values being combined, another factor is considered: <em>opacity</em>. Opacity acts as a linear interpolation of the resulting blended pixels. This additional factor is called <em>Alpha Compositing</em> &mdash; the blend calculation itself is not impacted by opacity; rather, the resulting blend pixel is affected by opacity strength.</p>
+
+  <!-- PIXEL INSPECTOR -->
+  <div class="pi-wrap">
+    <div class="pi-header">
+      <span class="pi-title">&#9632; Pixel Inspector</span>
+      <span style="font-family:var(--mono);font-size:9px;color:#2a5070;letter-spacing:.08em">CLICK GRADIENT TO SAMPLE</span>
     </div>
-    <p>Blend modes allow for many effects that are specifically altered by the top layer and a certain blend tool, transforming the bottom layer. These modes allow for effects like recoloring, adding shadows and highlights, increasing contrast, and more.</p>
-    <p>By understanding the math behind blend modes, an artist can improve their eye for detail to achieve a desired effect with more intention. Every overlapping pixel between two layers undergoes an arithmetic calculation to output a new pixel value — based on the initial colors and which of the six general categories of blend mode is utilized.</p>
-  </div>
-
-  <div class="divider"></div>
-
-  <div class="section">
-    <div class="section-header">
-      <div class="section-num">02</div>
-      <h2>RGB Values and General Calculation</h2>
-    </div>
-    <p>Monitors exclusively utilize RGB values to determine pixel color and process it for calculation and display. Each value — red, green, and blue — has a numerical value stating the strength of that primary in the combined color. A monitor can have hundreds of thousands of pixels, each set with RGB values that, overall, create a picture on a display.</p>
-    <p>In all art software where the user can manipulate visuals, these RGB values will be frequently changed. When two layers overlap each other, they define a relationship that determines the output of the blend. The top, visible layer manipulates the bottom layer under a certain blend mode, with the modes associated with a formula to output new RGB values.</p>
-    <p>Each value is translated to be between 0 and 1, with each calculation being multiplied by 255 for the output. Additionally, any computations exceeding 1, below 0, or leaving a trailing decimal (exceeding 2 decimal places) are normalized to the closest value within the min-max.</p>
-    <p>In addition to the RGB pixel values being combined, another factor is considered: <em>opacity</em>. Opacity acts as a linear interpolation of the resulting blended pixels — a modifier that determines how much the computed blend impacts the base layer. This additional factor is called <em>Alpha Compositing</em>. It is vital to note that the blend calculation is not impacted by opacity; rather, the resulting blend pixel is affected by opacity strength.</p>
-
-    <div class="pixel-inspector">
-      <div class="pi-header">
-        <div class="pi-header-title">&#9632; Pixel Inspector &mdash; click anywhere on the gradient</div>
+    <div class="pi-body">
+      <div class="pi-canvas-area" id="canvasWrap">
+        <canvas id="rainbowCanvas"></canvas>
+        <div class="corner corner-tl"></div><div class="corner corner-tr"></div>
+        <div class="corner corner-bl"></div><div class="corner corner-br"></div>
+        <div class="reticle" id="reticle">
+          <div class="reticle-outer"></div><div class="reticle-ring"></div>
+          <div class="reticle-h"></div><div class="reticle-v"></div>
+          <div class="reticle-dot"></div>
+        </div>
       </div>
-      <div class="pi-body">
-        <div class="pi-canvas-wrap" id="canvasWrap">
-          <canvas id="rainbowCanvas"></canvas>
-          <div class="reticle" id="reticle">
-            <div class="reticle-h"></div>
-            <div class="reticle-v"></div>
+      <div class="pi-controls">
+        <div class="pi-row">
+          <span class="pi-label">Saturation</span>
+          <input type="range" id="satSlider" class="pi-range" min="0" max="100" value="100" step="1">
+          <span class="pi-val" id="satVal">100%</span>
+        </div>
+      </div>
+      <div class="pi-hint" id="piHint">&#9632; &#9632; &#9632; awaiting pixel sample &#9632; &#9632; &#9632;</div>
+      <div class="pi-readout" id="piReadout" style="display:none">
+        <div class="pi-chip">
+          <div class="pi-chip-label">Color</div>
+          <div class="pi-swatch" id="piSwatch"></div>
+          <div class="pi-chip-val" id="piHex"></div>
+        </div>
+        <div class="pi-chip">
+          <div class="pi-chip-label">RGB</div>
+          <div class="pi-chip-val" id="piRGB"></div>
+        </div>
+        <div class="pi-chip">
+          <div class="pi-chip-label">HSL</div>
+          <div class="pi-chip-val" id="piHSL"></div>
+        </div>
+        <div class="pi-chip">
+          <div class="pi-chip-label">Normalized</div>
+          <div class="pi-chip-val" id="piNorm"></div>
+        </div>
+      </div>
+      <div class="save-row">
+        <div class="save-slot">
+          <div class="save-swatch" id="slot1Swatch"></div>
+          <div class="save-info">
+            <div class="save-label">Slot A</div>
+            <div class="save-hex" id="slot1Hex">&mdash;</div>
           </div>
+          <button class="save-btn" onclick="saveSlot(1)">Save A</button>
         </div>
-        <div class="pi-hint" id="piHint">Click any point on the gradient to inspect its pixel values</div>
-        <div class="pi-readout" id="piReadout" style="display:none;">
-          <div class="pi-chip">
-            <div class="pi-chip-label">Sampled color</div>
-            <div class="pi-swatch" id="piSwatch"></div>
-            <div class="pi-chip-value" id="piHex"></div>
+        <div class="save-slot">
+          <div class="save-swatch" id="slot2Swatch"></div>
+          <div class="save-info">
+            <div class="save-label">Slot B</div>
+            <div class="save-hex" id="slot2Hex">&mdash;</div>
           </div>
-          <div class="pi-chip">
-            <div class="pi-chip-label">RGB</div>
-            <div class="pi-chip-value" id="piRGB"></div>
-          </div>
-          <div class="pi-chip">
-            <div class="pi-chip-label">HSL</div>
-            <div class="pi-chip-value" id="piHSL"></div>
-          </div>
+          <button class="save-btn" onclick="saveSlot(2)">Save B</button>
         </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="divider"></div>
-
-  <div class="section">
-    <div class="section-header">
-      <div class="section-num">03</div>
-      <h2>The Core Formula</h2>
-    </div>
-    <p>The following is the basic equation to compute blending, which includes the top/blending layer, bottom/base layer, the blend mode function, and the opacity modifier. It is applied independently to each R, G, and B channel.</p>
-    <div class="formula-box">
-      <div class="formula-main">R &nbsp;= &nbsp;( <span class="formula-var">(1 &minus; &alpha;)</span> &times; B &nbsp;+ &nbsp;f(B, T) &times; <span class="formula-var">&alpha;</span> )</div>
-      <div class="formula-main" style="margin-top:6px;">Result &nbsp;= &nbsp;R &times; 255</div>
-      <div class="formula-divider"></div>
-      <div class="formula-vars">
-        <div class="formula-var-row"><span class="fv-key">&alpha;</span><span class="fv-eq">=</span><span class="fv-desc">Opacity of top layer (0 &ndash; 1)</span></div>
-        <div class="formula-var-row"><span class="fv-key">B</span><span class="fv-eq">=</span><span class="fv-desc">Bottom (base) layer RGB value</span></div>
-        <div class="formula-var-row"><span class="fv-key">T</span><span class="fv-eq">=</span><span class="fv-desc">Top (blend) layer RGB value</span></div>
-        <div class="formula-var-row"><span class="fv-key">f(B,&thinsp;T)</span><span class="fv-eq">=</span><span class="fv-desc">Blend mode function</span></div>
-      </div>
-      <span class="formula-note">Applied independently for each R, G, and B channel.</span>
-    </div>
-  </div>
-
-  <div class="divider"></div>
-
-  <div class="section">
-    <div class="section-header">
-      <div class="section-num">04</div>
-      <h2>Blend Mode Categories</h2>
-    </div>
-    <p>There are six general categories of blend modes in Photoshop, containing 27 distinct modes in total. Various blend mode functions are relatively simple arithmetic, but some lean on a bit of complexity.</p>
-
-    <div class="modes-grid">
-
-      <div class="mode-card">
-        <div class="mode-card-header">
-          <span class="mode-card-title">Normal</span>
-          <span class="mode-pill pill-normal">Category 1</span>
-        </div>
-        <div class="mode-card-body">
-          <p>Blending occurs only with the impact of opacity — no blend function equation is applied. Dissolve randomly scatters pixels based on opacity strength without altering RGB values.</p>
-          <div class="mode-examples">
-            <span class="mode-tag">Normal</span>
-            <span class="mode-tag">Dissolve</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="mode-card">
-        <div class="mode-card-header">
-          <span class="mode-card-title">Darken</span>
-          <span class="mode-pill pill-dark">Category 2</span>
-        </div>
-        <div class="mode-card-body">
-          <p>Selects the lower RGB value between layers, keeping the darkest result per channel. Multiply multiplies both values together. Color Burn and Linear Burn increase contrast and darken via division and subtraction. Darker Color compares composite luminosity rather than individual channels.</p>
-          <div class="mode-examples">
-            <span class="mode-tag">Darken</span>
-            <span class="mode-tag">Multiply</span>
-            <span class="mode-tag">Color Burn</span>
-            <span class="mode-tag">Linear Burn</span>
-            <span class="mode-tag">Darker Color</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="mode-card">
-        <div class="mode-card-header">
-          <span class="mode-card-title">Lighten</span>
-          <span class="mode-pill pill-light">Category 3</span>
-        </div>
-        <div class="mode-card-body">
-          <p>The opposite of Darken — prioritizes higher RGB values to brighten highlights and midtones. Screen inverts, multiplies, then inverts again. Color Dodge and Linear Dodge (Add) brighten the base by dividing or adding the blend value. Lighter Color compares composite luminosity.</p>
-          <div class="mode-examples">
-            <span class="mode-tag">Lighten</span>
-            <span class="mode-tag">Screen</span>
-            <span class="mode-tag">Color Dodge</span>
-            <span class="mode-tag">Linear Dodge (Add)</span>
-            <span class="mode-tag">Lighter Color</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="mode-card">
-        <div class="mode-card-header">
-          <span class="mode-card-title">Contrast</span>
-          <span class="mode-pill pill-contrast">Category 4</span>
-        </div>
-        <div class="mode-card-body">
-          <p>Colors are evaluated against the 50% gray midpoint — below darkens, above lightens. Overlay applies Multiply to darks and Screen to lights. Soft Light is a gentler version. Hard Light reverses the layer roles. Vivid, Linear, and Pin Light each combine dodging and burning differently. Hard Mix posterizes to pure primaries.</p>
-          <div class="mode-examples">
-            <span class="mode-tag">Overlay</span>
-            <span class="mode-tag">Soft Light</span>
-            <span class="mode-tag">Hard Light</span>
-            <span class="mode-tag">Vivid Light</span>
-            <span class="mode-tag">Linear Light</span>
-            <span class="mode-tag">Pin Light</span>
-            <span class="mode-tag">Hard Mix</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="mode-card">
-        <div class="mode-card-header">
-          <span class="mode-card-title">Comparative</span>
-          <span class="mode-pill pill-compare">Category 5</span>
-        </div>
-        <div class="mode-card-body">
-          <p>Compares the top and base pixels mathematically. Difference subtracts and takes the absolute value, inverting colors. Exclusion lowers contrast by reducing the effect on midtones. Subtract and Divide apply their respective operations directly to each channel.</p>
-          <div class="mode-examples">
-            <span class="mode-tag">Difference</span>
-            <span class="mode-tag">Exclusion</span>
-            <span class="mode-tag">Subtract</span>
-            <span class="mode-tag">Divide</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="mode-card">
-        <div class="mode-card-header">
-          <span class="mode-card-title">HSL</span>
-          <span class="mode-pill pill-hsl">Category 6</span>
-        </div>
-        <div class="mode-card-body">
-          <p>Operates on Hue, Saturation, and Luminosity rather than RGB. Hue applies the blend layer's hue to the base's saturation and luminosity. Saturation applies only the saturation. Color applies both hue and saturation. Luminosity applies only the luminosity, preserving the base's color.</p>
-          <div class="mode-examples">
-            <span class="mode-tag">Hue</span>
-            <span class="mode-tag">Saturation</span>
-            <span class="mode-tag">Color</span>
-            <span class="mode-tag">Luminosity</span>
-          </div>
-        </div>
-      </div>
-
-    </div>
-  </div>
-
-  <div class="divider"></div>
-
-  <div class="section">
-    <div class="section-header">
-      <div class="section-num">05</div>
-      <h2>Sources</h2>
-    </div>
-    <div class="sources-list">
-      <div class="source-item">
-        <div class="source-dot"></div>
-        <div class="source-text">Adobe. &ldquo;Blending Mode Descriptions.&rdquo; <em>Adobe.com</em>, 2019. helpx.adobe.com/photoshop/desktop/repair-retouch/adjust-light-tone/blending-mode-descriptions.html</div>
-      </div>
-      <div class="source-item">
-        <div class="source-dot"></div>
-        <div class="source-text">Kost, Julieanne. &ldquo;Working with Blend Modes in Photoshop.&rdquo; <em>Julieanne Kost&rsquo;s Blog</em>, 2018. jkost.com/blog/2018/08/working-with-blend-modes-in-photoshop-cc.html</div>
-      </div>
-      <div class="source-item">
-        <div class="source-dot"></div>
-        <div class="source-text">Sucan, Marius. &ldquo;Blending Modes Math Formulas.&rdquo; <em>Sucan.ro Blog</em>, July 2023. marius.sucan.ro/blog/2023/blending-modes-maths/</div>
-      </div>
-      <div class="source-item">
-        <div class="source-dot"></div>
-        <div class="source-text">Thomas, Robert. &ldquo;A Detailed Explanation of How Photoshop Blend Modes Work.&rdquo; <em>Photo Blog Stop</em>, 17 Apr. 2011. photoblogstop.com/photoshop/photoshop-blend-modes-explained/</div>
       </div>
     </div>
   </div>
 
-  <div class="footer">Advanced Interaction Design &mdash; Final Project &mdash; 2026</div>
+  <!-- VENN BLEND DEMO -->
+  <div class="venn-wrap">
+    <div class="venn-header">
+      <span class="venn-title">&#9632; Blend Venn Demo</span>
+      <button class="venn-reset-btn" onclick="resetVenn()">Reset</button>
+    </div>
+    <div class="venn-body">
+      <div id="vennNoColor" class="venn-no-color">Save two colors above to activate the blend demo</div>
+      <div id="vennContent" style="display:none">
+        <div class="venn-canvas-wrap">
+          <canvas id="vennCanvas" width="500" height="200"></canvas>
+        </div>
+        <div class="venn-mode-label" id="vennModeLabel">Select a blend mode below</div>
+        <div class="blend-options">
+          <button class="blend-btn" onclick="applyBlend('normal')"    data-mode="normal">    <span>Normal</span>    <span class="blend-btn-cat">Normal</span></button>
+          <button class="blend-btn" onclick="applyBlend('multiply')"  data-mode="multiply">  <span>Multiply</span>  <span class="blend-btn-cat">Darken</span></button>
+          <button class="blend-btn" onclick="applyBlend('screen')"    data-mode="screen">    <span>Screen</span>    <span class="blend-btn-cat">Lighten</span></button>
+          <button class="blend-btn" onclick="applyBlend('overlay')"   data-mode="overlay">   <span>Overlay</span>   <span class="blend-btn-cat">Contrast</span></button>
+          <button class="blend-btn" onclick="applyBlend('difference')" data-mode="difference"><span>Difference</span><span class="blend-btn-cat">Comparative</span></button>
+          <button class="blend-btn" onclick="applyBlend('hue')"       data-mode="hue">       <span>Hue</span>       <span class="blend-btn-cat">HSL</span></button>
+        </div>
 
+        <!-- EQUATION OUTPUT PANEL -->
+        <div class="eq-panel" id="eqPanel">
+          <div class="eq-header-row">
+            <div class="eq-badge"><div class="eq-badge-dot"></div>Blend equation output</div>
+            <div class="eq-mode-name" id="eqModeName"></div>
+          </div>
+          <div class="eq-formula-line" id="eqFormulaLine"></div>
+          <div class="eq-channels">
+            <div class="eq-ch eq-ch-r">
+              <div class="eq-ch-name">Red channel</div>
+              <div id="eqR"></div>
+            </div>
+            <div class="eq-ch eq-ch-g">
+              <div class="eq-ch-name">Green channel</div>
+              <div id="eqG"></div>
+            </div>
+            <div class="eq-ch eq-ch-b">
+              <div class="eq-ch-name">Blue channel</div>
+              <div id="eqB"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<div class="section">
+  <div class="section-header"><div class="section-num">03</div><h2>The Core Formula</h2></div>
+  <p>The following is the basic equation to compute blending, including the top/blending layer, bottom/base layer, the blend mode function, and the opacity modifier. It is applied independently to each R, G, and B channel.</p>
+  <div class="formula-box">
+    <div class="formula-main">R &nbsp;= &nbsp;( <span class="fvar">(1 &minus; &alpha;)</span> &times; B &nbsp;+ &nbsp;f(B,T) &times; <span class="fvar">&alpha;</span> )</div>
+    <div class="formula-main" style="margin-top:6px">Result &nbsp;= &nbsp;R &times; 255</div>
+    <div class="fdiv"></div>
+    <div class="fvars">
+      <div class="fvrow"><span class="fvk">&alpha;</span><span class="fveq">=</span><span class="fvd">Opacity of top layer (0&ndash;1)</span></div>
+      <div class="fvrow"><span class="fvk">B</span><span class="fveq">=</span><span class="fvd">Bottom (base) layer RGB value</span></div>
+      <div class="fvrow"><span class="fvk">T</span><span class="fveq">=</span><span class="fvd">Top (blend) layer RGB value</span></div>
+      <div class="fvrow"><span class="fvk">f(B,&thinsp;T)</span><span class="fveq">=</span><span class="fvd">Blend mode function</span></div>
+    </div>
+    <span class="fnote">Applied independently for each R, G, and B channel.</span>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<div class="section">
+  <div class="section-header"><div class="section-num">04</div><h2>Blend Mode Categories</h2></div>
+  <p>There are six general categories of blend modes in Photoshop, containing 27 distinct modes in total. Various blend mode functions are relatively simple arithmetic, but some lean on a bit of complexity.</p>
+  <div class="modes-grid">
+    <div class="mode-card">
+      <div class="mode-card-header"><span class="mode-card-title">Normal</span><span class="mode-pill pill-normal">Category 1</span></div>
+      <div class="mode-card-body">
+        <p>Blending occurs only with the impact of opacity &mdash; no blend function equation is applied. Dissolve randomly scatters pixels based on opacity strength without altering RGB values.</p>
+        <div class="mode-examples"><span class="mode-tag">Normal</span><span class="mode-tag">Dissolve</span></div>
+      </div>
+    </div>
+    <div class="mode-card">
+      <div class="mode-card-header"><span class="mode-card-title">Darken</span><span class="mode-pill pill-dark">Category 2</span></div>
+      <div class="mode-card-body">
+        <p>Selects the lower RGB value between layers per channel. Multiply multiplies both values together. Color Burn and Linear Burn increase contrast via division and subtraction. Darker Color compares composite luminosity rather than individual channels.</p>
+        <div class="mode-examples"><span class="mode-tag">Darken</span><span class="mode-tag">Multiply</span><span class="mode-tag">Color Burn</span><span class="mode-tag">Linear Burn</span><span class="mode-tag">Darker Color</span></div>
+      </div>
+    </div>
+    <div class="mode-card">
+      <div class="mode-card-header"><span class="mode-card-title">Lighten</span><span class="mode-pill pill-light">Category 3</span></div>
+      <div class="mode-card-body">
+        <p>The opposite of Darken &mdash; prioritizes higher RGB values to brighten highlights and midtones. Screen inverts, multiplies, then inverts again. Color Dodge and Linear Dodge (Add) brighten the base by dividing or adding. Lighter Color compares composite luminosity.</p>
+        <div class="mode-examples"><span class="mode-tag">Lighten</span><span class="mode-tag">Screen</span><span class="mode-tag">Color Dodge</span><span class="mode-tag">Linear Dodge (Add)</span><span class="mode-tag">Lighter Color</span></div>
+      </div>
+    </div>
+    <div class="mode-card">
+      <div class="mode-card-header"><span class="mode-card-title">Contrast</span><span class="mode-pill pill-contrast">Category 4</span></div>
+      <div class="mode-card-body">
+        <p>Colors evaluated against the 50% gray midpoint &mdash; below darkens, above lightens. Overlay applies Multiply to darks and Screen to lights. Soft Light is gentler. Hard Light reverses the roles. Vivid, Linear, and Pin Light combine dodging and burning differently. Hard Mix posterizes.</p>
+        <div class="mode-examples"><span class="mode-tag">Overlay</span><span class="mode-tag">Soft Light</span><span class="mode-tag">Hard Light</span><span class="mode-tag">Vivid Light</span><span class="mode-tag">Linear Light</span><span class="mode-tag">Pin Light</span><span class="mode-tag">Hard Mix</span></div>
+      </div>
+    </div>
+    <div class="mode-card">
+      <div class="mode-card-header"><span class="mode-card-title">Comparative</span><span class="mode-pill pill-compare">Category 5</span></div>
+      <div class="mode-card-body">
+        <p>Compares top and base pixels mathematically. Difference subtracts and takes the absolute value, inverting colors. Exclusion lowers contrast by reducing the effect on midtones. Subtract and Divide apply their respective operations directly per channel.</p>
+        <div class="mode-examples"><span class="mode-tag">Difference</span><span class="mode-tag">Exclusion</span><span class="mode-tag">Subtract</span><span class="mode-tag">Divide</span></div>
+      </div>
+    </div>
+    <div class="mode-card">
+      <div class="mode-card-header"><span class="mode-card-title">HSL</span><span class="mode-pill pill-hsl">Category 6</span></div>
+      <div class="mode-card-body">
+        <p>Operates on Hue, Saturation, and Luminosity rather than RGB. Hue applies the blend layer's hue to the base's saturation and luminosity. Saturation applies only saturation. Color applies both hue and saturation. Luminosity applies only luminosity, preserving the base color.</p>
+        <div class="mode-examples"><span class="mode-tag">Hue</span><span class="mode-tag">Saturation</span><span class="mode-tag">Color</span><span class="mode-tag">Luminosity</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<div class="section">
+  <div class="section-header"><div class="section-num">05</div><h2>Sources</h2></div>
+  <div class="sources-list">
+    <div class="source-item"><div class="source-dot"></div><div class="source-text">Adobe. &ldquo;Blending Mode Descriptions.&rdquo; <em>Adobe.com</em>, 2019. helpx.adobe.com/photoshop/desktop/repair-retouch/adjust-light-tone/blending-mode-descriptions.html</div></div>
+    <div class="source-item"><div class="source-dot"></div><div class="source-text">Kost, Julieanne. &ldquo;Working with Blend Modes in Photoshop.&rdquo; <em>Julieanne Kost&rsquo;s Blog</em>, 2018. jkost.com/blog/2018/08/working-with-blend-modes-in-photoshop-cc.html</div></div>
+    <div class="source-item"><div class="source-dot"></div><div class="source-text">Sucan, Marius. &ldquo;Blending Modes Math Formulas.&rdquo; <em>Sucan.ro Blog</em>, July 2023. marius.sucan.ro/blog/2023/blending-modes-maths/</div></div>
+    <div class="source-item"><div class="source-dot"></div><div class="source-text">Thomas, Robert. &ldquo;A Detailed Explanation of How Photoshop Blend Modes Work.&rdquo; <em>Photo Blog Stop</em>, 17 Apr. 2011. photoblogstop.com/photoshop/photoshop-blend-modes-explained/</div></div>
+  </div>
+</div>
+
+<div class="footer">Advanced Interaction Design &mdash; Final Project &mdash; 2026</div>
 </div>
 
 <script>
-  const canvas = document.getElementById('rainbowCanvas');
-  const wrap = document.getElementById('canvasWrap');
-  const reticle = document.getElementById('reticle');
-  const piHint = document.getElementById('piHint');
-  const piReadout = document.getElementById('piReadout');
-  const piSwatch = document.getElementById('piSwatch');
-  const piHex = document.getElementById('piHex');
-  const piRGB = document.getElementById('piRGB');
-  const piHSL = document.getElementById('piHSL');
+/* ── Pixel Inspector ── */
+const canvas   = document.getElementById('rainbowCanvas');
+const wrap     = document.getElementById('canvasWrap');
+const reticle  = document.getElementById('reticle');
+const piHint   = document.getElementById('piHint');
+const piReadout= document.getElementById('piReadout');
+const satSlider= document.getElementById('satSlider');
+const satVal   = document.getElementById('satVal');
 
-  function drawRainbow() {
-    const W = wrap.clientWidth;
-    const H = 80;
-    canvas.width = W;
-    canvas.height = H;
-    const ctx = canvas.getContext('2d');
-    const grad = ctx.createLinearGradient(0, 0, W, 0);
-    grad.addColorStop(0,    'hsl(0,100%,50%)');
-    grad.addColorStop(0.17, 'hsl(60,100%,50%)');
-    grad.addColorStop(0.33, 'hsl(120,100%,50%)');
-    grad.addColorStop(0.5,  'hsl(180,100%,50%)');
-    grad.addColorStop(0.67, 'hsl(240,100%,50%)');
-    grad.addColorStop(0.83, 'hsl(300,100%,50%)');
-    grad.addColorStop(1,    'hsl(360,100%,50%)');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, W, H);
-  }
+let saturation = 100;
+let savedColors= [null,null];
+let currentRGB = null;
 
-  function rgbToHsl(r, g, b) {
-    r /= 255; g /= 255; b /= 255;
-    const max = Math.max(r, g, b), min = Math.min(r, g, b);
-    let h = 0, s = 0, l = (max + min) / 2;
-    if (max !== min) {
-      const d = max - min;
-      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-      switch (max) {
-        case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
-        case g: h = ((b - r) / d + 2) / 6; break;
-        case b: h = ((r - g) / d + 4) / 6; break;
-      }
+function drawRainbow(){
+  const W=wrap.clientWidth, H=90;
+  canvas.width=W; canvas.height=H;
+  const ctx=canvas.getContext('2d');
+  const g=ctx.createLinearGradient(0,0,W,0);
+  [[0,'hsl(0,100%,50%)'],[0.17,'hsl(60,100%,50%)'],[0.33,'hsl(120,100%,50%)'],
+   [0.5,'hsl(180,100%,50%)'],[0.67,'hsl(240,100%,50%)'],[0.83,'hsl(300,100%,50%)'],[1,'hsl(360,100%,50%)']
+  ].forEach(([s,c])=>g.addColorStop(s,c));
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  if(saturation<100){
+    const id=ctx.getImageData(0,0,W,H),d=id.data,f=saturation/100;
+    for(let i=0;i<d.length;i+=4){
+      const gr=Math.round(0.299*d[i]+0.587*d[i+1]+0.114*d[i+2]);
+      d[i]=Math.round(gr+(d[i]-gr)*f); d[i+1]=Math.round(gr+(d[i+1]-gr)*f); d[i+2]=Math.round(gr+(d[i+2]-gr)*f);
     }
-    return [Math.round(h * 360), Math.round(s * 100), Math.round(l * 100)];
+    ctx.putImageData(id,0,0);
   }
+}
 
-  function toHex(r, g, b) {
-    return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0').toUpperCase()).join('');
+function rgbToHsl(r,g,b){
+  r/=255;g/=255;b/=255;
+  const mx=Math.max(r,g,b),mn=Math.min(r,g,b);
+  let h=0,s=0,l=(mx+mn)/2;
+  if(mx!==mn){
+    const d=mx-mn; s=l>0.5?d/(2-mx-mn):d/(mx+mn);
+    switch(mx){case r:h=((g-b)/d+(g<b?6:0))/6;break;case g:h=((b-r)/d+2)/6;break;case b:h=((r-g)/d+4)/6;break;}
   }
+  return[Math.round(h*360),Math.round(s*100),Math.round(l*100)];
+}
 
-  function getPos(e) {
-    const rect = wrap.getBoundingClientRect();
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    return {
-      x: Math.min(Math.max(Math.round((clientX - rect.left) * (canvas.width / rect.width)), 0), canvas.width - 1),
-      y: Math.min(Math.max(Math.round((clientY - rect.top) * (canvas.height / rect.height)), 0), canvas.height - 1),
-      pctX: Math.min(Math.max(((clientX - rect.left) / rect.width) * 100, 0), 100),
-      pctY: Math.min(Math.max(((clientY - rect.top) / rect.height) * 100, 0), 100)
-    };
+function hslToRgb(h,s,l){
+  h/=360;s/=100;l/=100;
+  let r,g,b;
+  if(s===0){r=g=b=l;}else{
+    const q=l<0.5?l*(1+s):l+s-l*s,p=2*l-q;
+    r=hue2rgb(p,q,h+1/3);g=hue2rgb(p,q,h);b=hue2rgb(p,q,h-1/3);
   }
+  return{r:Math.round(r*255),g:Math.round(g*255),b:Math.round(b*255)};
+}
+function hue2rgb(p,q,t){if(t<0)t+=1;if(t>1)t-=1;if(t<1/6)return p+(q-p)*6*t;if(t<1/2)return q;if(t<2/3)return p+(q-p)*(2/3-t)*6;return p;}
 
-  function inspect(e) {
-    const { x, y, pctX, pctY } = getPos(e);
-    const ctx = canvas.getContext('2d');
-    const px = ctx.getImageData(x, y, 1, 1).data;
-    const r = px[0], g = px[1], b = px[2];
-    const [h, s, l] = rgbToHsl(r, g, b);
-    const hex = toHex(r, g, b);
+function toHex(r,g,b){'#'+[r,g,b].map(v=>v.toString(16).padStart(2,'0').toUpperCase()).join('')}
 
-    reticle.style.left = pctX + '%';
-    reticle.style.top = pctY + '%';
-    reticle.style.display = 'block';
+function n2(v){return v.toFixed(2);}
 
-    piSwatch.style.background = 'rgb(' + r + ',' + g + ',' + b + ')';
-    piHex.textContent = hex;
-    piRGB.innerHTML = 'R: ' + r + '<br>G: ' + g + '<br>B: ' + b;
-    piHSL.innerHTML = 'H: ' + h + '&deg;<br>S: ' + s + '%<br>L: ' + l + '%';
+function inspect(e){
+  const rect=wrap.getBoundingClientRect();
+  const cx=e.touches?e.touches[0].clientX:e.clientX;
+  const cy=e.touches?e.touches[0].clientY:e.clientY;
+  const x=Math.min(Math.max(Math.round((cx-rect.left)*(canvas.width/rect.width)),0),canvas.width-1);
+  const y=Math.min(Math.max(Math.round((cy-rect.top)*(canvas.height/rect.height)),0),canvas.height-1);
+  const px=canvas.getContext('2d').getImageData(x,y,1,1).data;
+  const r=px[0],g=px[1],b=px[2];
+  const [h,s,l]=rgbToHsl(r,g,b);
+  const hex='#'+[r,g,b].map(v=>v.toString(16).padStart(2,'0').toUpperCase()).join('');
+  currentRGB=[r,g,b];
 
-    piHint.style.display = 'none';
-    piReadout.style.display = 'grid';
+  const pctX=Math.min(Math.max(((cx-rect.left)/rect.width)*100,0),100);
+  const pctY=Math.min(Math.max(((cy-rect.top)/rect.height)*100,0),100);
+  reticle.style.left=pctX+'%'; reticle.style.top=pctY+'%'; reticle.style.display='block';
+
+  document.getElementById('piSwatch').style.background='rgb('+r+','+g+','+b+')';
+  document.getElementById('piHex').textContent=hex;
+  document.getElementById('piRGB').innerHTML='R: '+r+'<br>G: '+g+'<br>B: '+b;
+  document.getElementById('piHSL').innerHTML='H: '+h+'&deg;<br>S: '+s+'%<br>L: '+l+'%';
+  document.getElementById('piNorm').innerHTML=n2(r/255)+'<br>'+n2(g/255)+'<br>'+n2(b/255);
+  piHint.style.display='none'; piReadout.style.display='grid';
+}
+
+wrap.addEventListener('click',inspect);
+wrap.addEventListener('mousemove',e=>{if(e.buttons===1)inspect(e);});
+wrap.addEventListener('touchmove',e=>{e.preventDefault();inspect(e);},{passive:false});
+satSlider.addEventListener('input',()=>{saturation=parseInt(satSlider.value);satVal.textContent=saturation+'%';drawRainbow();});
+
+function saveSlot(n){
+  if(!currentRGB)return;
+  const [r,g,b]=currentRGB;
+  const hex='#'+[r,g,b].map(v=>v.toString(16).padStart(2,'0').toUpperCase()).join('');
+  savedColors[n-1]={r,g,b,hex};
+  document.getElementById('slot'+n+'Swatch').style.background='rgb('+r+','+g+','+b+')';
+  document.getElementById('slot'+n+'Hex').textContent=hex;
+  if(savedColors[0]&&savedColors[1])activateVenn();
+}
+
+/* ── Venn ── */
+const vennCanvas=document.getElementById('vennCanvas');
+const vCtx=vennCanvas.getContext('2d');
+let blendAnim=null, currentMode=null;
+
+function activateVenn(){
+  document.getElementById('vennNoColor').style.display='none';
+  document.getElementById('vennContent').style.display='block';
+  drawVenn(0,null);
+}
+
+function resetVenn(){
+  if(blendAnim)cancelAnimationFrame(blendAnim);
+  currentMode=null;
+  document.querySelectorAll('.blend-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('vennModeLabel').textContent='Select a blend mode below';
+  document.getElementById('eqPanel').classList.remove('visible');
+  if(savedColors[0]&&savedColors[1])drawVenn(0,null);
+}
+
+function blendChannel(b,t,mode){
+  b/=255; t/=255;
+  let res;
+  switch(mode){
+    case 'normal':     res=t; break;
+    case 'multiply':   res=b*t; break;
+    case 'screen':     res=1-(1-b)*(1-t); break;
+    case 'overlay':    res=b<0.5?2*b*t:1-2*(1-b)*(1-t); break;
+    case 'difference': res=Math.abs(b-t); break;
+    default:           res=t;
   }
+  return Math.round(Math.min(1,Math.max(0,res))*255);
+}
 
-  wrap.addEventListener('click', inspect);
-  wrap.addEventListener('mousemove', function(e) { if (e.buttons === 1) inspect(e); });
-  wrap.addEventListener('touchmove', function(e) { e.preventDefault(); inspect(e); }, { passive: false });
+function blendRGB(c1,c2,mode,progress){
+  if(!mode||progress===0)return c1;
+  let br,bg,bb;
+  if(mode==='hue'){
+    const [h2]=rgbToHsl(c2.r,c2.g,c2.b);
+    const [,s1,l1]=rgbToHsl(c1.r,c1.g,c1.b);
+    const bl=hslToRgb(h2,s1,l1);
+    br=bl.r; bg=bl.g; bb=bl.b;
+  } else {
+    br=blendChannel(c1.r,c2.r,mode);
+    bg=blendChannel(c1.g,c2.g,mode);
+    bb=blendChannel(c1.b,c2.b,mode);
+  }
+  return{
+    r:Math.round(c1.r+(br-c1.r)*progress),
+    g:Math.round(c1.g+(bg-c1.g)*progress),
+    b:Math.round(c1.b+(bb-c1.b)*progress)
+  };
+}
 
-  drawRainbow();
-  window.addEventListener('resize', drawRainbow);
+function drawVenn(progress,mode){
+  const W=vennCanvas.width,H=vennCanvas.height;
+  vCtx.clearRect(0,0,W,H);
+  const cx=W/2,cy=H/2,r=72,sep=r*2-50;
+  const x1=cx-sep/2,x2=cx+sep/2;
+  const c1=savedColors[0],c2=savedColors[1];
+  if(!c1||!c2)return;
+  const blended=blendRGB(c1,c2,mode,progress);
+
+  vCtx.save(); vCtx.globalAlpha=0.82;
+  vCtx.beginPath(); vCtx.arc(x1,cy,r,0,Math.PI*2);
+  vCtx.fillStyle='rgb('+c1.r+','+c1.g+','+c1.b+')'; vCtx.fill();
+  vCtx.beginPath(); vCtx.arc(x2,cy,r,0,Math.PI*2);
+  vCtx.fillStyle='rgb('+c2.r+','+c2.g+','+c2.b+')'; vCtx.fill();
+  vCtx.save();
+  vCtx.beginPath(); vCtx.arc(x1,cy,r,0,Math.PI*2); vCtx.clip();
+  vCtx.beginPath(); vCtx.arc(x2,cy,r,0,Math.PI*2);
+  vCtx.fillStyle='rgb('+blended.r+','+blended.g+','+blended.b+')'; vCtx.fill();
+  vCtx.restore(); vCtx.restore();
+
+  [x1,x2].forEach(x=>{vCtx.beginPath();vCtx.arc(x,cy,r,0,Math.PI*2);vCtx.strokeStyle='rgba(0,255,204,0.25)';vCtx.lineWidth=0.5;vCtx.stroke();});
+  vCtx.font='10px "Courier New"'; vCtx.textAlign='center';
+  vCtx.fillStyle='rgba(0,255,204,0.5)';
+  vCtx.fillText('A',x1-r/2.2,cy+4); vCtx.fillText('B',x2+r/2.2,cy+4);
+  if(progress>0){
+    vCtx.fillStyle='rgba(0,255,204,'+(0.4*progress)+')';
+    vCtx.fillText(Math.round(progress*100)+'%',cx,cy+4);
+  }
+}
+
+/* ── Equation Builder ── */
+function eqLine(label,steps,result255){
+  const norm=n2(result255/255);
+  return '<div class="eq-line">'
+    +'<span class="enorm">'+label+' &nbsp;</span>'
+    +steps
+    +' = <span class="eres">'+result255+'</span>'
+    +' <span class="enorm">('+norm+')</span>'
+    +'</div>';
+}
+
+function v(val){return '<span class="ev">'+val+'</span>';}
+function op(sym){return '<span class="eop">'+sym+'</span>';}
+
+function buildEquation(mode,c1,c2){
+  const B=[n2(c1.r/255),n2(c1.g/255),n2(c1.b/255)];
+  const T=[n2(c2.r/255),n2(c2.g/255),n2(c2.b/255)];
+  const ch=['r','g','b'];
+  const labels=['B','B','B'];
+  const Braw=[c1.r,c1.g,c1.b];
+  const Traw=[c2.r,c2.g,c2.b];
+
+  const formulaMap={
+    normal:    'f(B,T) = T',
+    multiply:  'f(B,T) = B &times; T',
+    screen:    'f(B,T) = 1 &minus; (1&minus;B)(1&minus;T)',
+    overlay:   'f(B,T) = 2BT if B&lt;0.5, else 1&minus;2(1&minus;B)(1&minus;T)',
+    difference:'f(B,T) = |B &minus; T|',
+    hue:       'f(B,T) = hslToRgb( hue(T), sat(B), lum(B) )',
+  };
+
+  document.getElementById('eqFormulaLine').innerHTML=
+    '<span>Formula: </span><span>'+formulaMap[mode]+'</span>';
+
+  ch.forEach((c,i)=>{
+    const b=parseFloat(B[i]), t=parseFloat(T[i]);
+    const Bv=v(B[i]), Tv=v(T[i]);
+    let steps='', result=0;
+
+    if(mode==='normal'){
+      steps=Tv; result=Traw[i];
+    } else if(mode==='multiply'){
+      const r=b*t;
+      result=Math.round(Math.min(1,r)*255);
+      steps=Bv+op(' &times; ')+Tv+op(' = ')+v(n2(r));
+    } else if(mode==='screen'){
+      const r=1-(1-b)*(1-t);
+      result=Math.round(Math.min(1,r)*255);
+      steps=op('1 &minus; (1&minus;')+Bv+op(')(1&minus;')+Tv+op(') = ')+v(n2(r));
+    } else if(mode==='overlay'){
+      let r;
+      if(b<0.5){ r=2*b*t; steps=op('2 &times; ')+Bv+op(' &times; ')+Tv+op(' = ')+v(n2(r)); }
+      else      { r=1-2*(1-b)*(1-t); steps=op('1&minus;2(1&minus;')+Bv+op(')(1&minus;')+Tv+op(') = ')+v(n2(r)); }
+      result=Math.round(Math.min(1,Math.max(0,r))*255);
+    } else if(mode==='difference'){
+      const r=Math.abs(b-t);
+      result=Math.round(r*255);
+      steps=op('|')+Bv+op(' &minus; ')+Tv+op('| = ')+v(n2(r));
+    } else if(mode==='hue'){
+      const [h2]=rgbToHsl(c2.r,c2.g,c2.b);
+      const [,s1,l1]=rgbToHsl(c1.r,c1.g,c1.b);
+      const bl=hslToRgb(h2,s1,l1);
+      result=bl[c]; // r/g/b
+      steps=op('hsl(')+v(h2+'&deg;')+op(', ')+v(s1+'%')+op(', ')+v(l1+'%')+op(') &rarr; ')+v(result);
+      steps=op('hue(T)=')+v(h2+'&deg;')+op(' + sat/lum(A) &rarr; ');
+    }
+
+    const channelResult = (mode==='hue') ? (i===0?hslToRgb(...function(){const[h2]=rgbToHsl(c2.r,c2.g,c2.b);const[,s1,l1]=rgbToHsl(c1.r,c1.g,c1.b);return[h2,s1,l1];}()).r : i===1?hslToRgb(...function(){const[h2]=rgbToHsl(c2.r,c2.g,c2.b);const[,s1,l1]=rgbToHsl(c1.r,c1.g,c1.b);return[h2,s1,l1];}()).g : hslToRgb(...function(){const[h2]=rgbToHsl(c2.r,c2.g,c2.b);const[,s1,l1]=rgbToHsl(c1.r,c1.g,c1.b);return[h2,s1,l1];}()).b) : result;
+
+    const finalResult = (mode==='hue') ? channelResult : result;
+    document.getElementById('eq'+c.toUpperCase()).innerHTML=
+      '<div class="eq-line"><span class="enorm">B=</span>'+v(B[i])+op(' &nbsp;T=')+''+v(T[i])+'</div>'
+      +eqLine('f&rarr;',steps,finalResult);
+  });
+
+  document.getElementById('eqModeName').textContent=mode.charAt(0).toUpperCase()+mode.slice(1);
+  document.getElementById('eqPanel').classList.add('visible');
+}
+
+/* handle hue cleanly */
+function getHueResult(c1,c2,channel){
+  const [h2]=rgbToHsl(c2.r,c2.g,c2.b);
+  const [,s1,l1]=rgbToHsl(c1.r,c1.g,c1.b);
+  const bl=hslToRgb(h2,s1,l1);
+  return channel==='r'?bl.r:channel==='g'?bl.g:bl.b;
+}
+
+function buildEquationClean(mode,c1,c2){
+  const B=[n2(c1.r/255),n2(c1.g/255),n2(c1.b/255)];
+  const T=[n2(c2.r/255),n2(c2.g/255),n2(c2.b/255)];
+
+  const formulaMap={
+    normal:    'f(B,T) = T &nbsp;&mdash;&nbsp; top layer value passes through',
+    multiply:  'f(B,T) = B &times; T &nbsp;&mdash;&nbsp; normalized values multiplied',
+    screen:    'f(B,T) = 1 &minus; (1&minus;B)(1&minus;T) &nbsp;&mdash;&nbsp; inverted multiply',
+    overlay:   'f(B,T) = 2BT if B&lt;0.5, else 1&minus;2(1&minus;B)(1&minus;T)',
+    difference:'f(B,T) = |B &minus; T| &nbsp;&mdash;&nbsp; absolute difference',
+    hue:       'f(B,T) = hslToRgb( hue(T), saturation(B), luminosity(B) )',
+  };
+
+  document.getElementById('eqFormulaLine').innerHTML=
+    '<span style="color:#2a6080">Formula: </span><span style="color:#5a9ab0">'+formulaMap[mode]+'</span>';
+
+  ['r','g','b'].forEach((ch,i)=>{
+    const b=parseFloat(B[i]), t=parseFloat(T[i]);
+    const Bv=v(B[i]), Tv=v(T[i]);
+    let steps='', finalResult=0;
+
+    if(mode==='normal'){
+      steps=Tv; finalResult=c2[ch];
+    } else if(mode==='multiply'){
+      const r=b*t; finalResult=Math.round(Math.min(1,r)*255);
+      steps=Bv+op(' &times; ')+Tv+op(' = ')+v(n2(r));
+    } else if(mode==='screen'){
+      const r=1-(1-b)*(1-t); finalResult=Math.round(Math.min(1,r)*255);
+      steps=op('1&minus;(1&minus;')+Bv+op(')(1&minus;')+Tv+op(') = ')+v(n2(r));
+    } else if(mode==='overlay'){
+      let r;
+      if(b<0.5){ r=2*b*t; steps=op('2&times;')+Bv+op('&times;')+Tv+op(' = ')+v(n2(r)); }
+      else      { r=1-2*(1-b)*(1-t); steps=op('1&minus;2(1&minus;')+Bv+op(')(1&minus;')+Tv+op(') = ')+v(n2(r)); }
+      finalResult=Math.round(Math.min(1,Math.max(0,r))*255);
+    } else if(mode==='difference'){
+      const r=Math.abs(b-t); finalResult=Math.round(r*255);
+      steps=op('|')+Bv+op('&minus;')+Tv+op('| = ')+v(n2(r));
+    } else if(mode==='hue'){
+      const [h2]=rgbToHsl(c2.r,c2.g,c2.b);
+      const [,s1,l1]=rgbToHsl(c1.r,c1.g,c1.b);
+      finalResult=getHueResult(c1,c2,ch);
+      steps=op('hue=')+v(h2+'&deg;')+op(' sat=')+v(s1+'%')+op(' lum=')+v(l1+'%')+op(' &rarr; ')+v(finalResult);
+    }
+
+    document.getElementById('eq'+ch.toUpperCase()).innerHTML=
+      '<div class="eq-line"><span class="enorm">B=</span>'+v(B[i])+'  <span class="enorm">T=</span>'+v(T[i])+'</div>'
+      +eqLine('=&nbsp;',steps,finalResult);
+  });
+
+  document.getElementById('eqModeName').textContent=mode.charAt(0).toUpperCase()+mode.slice(1);
+  document.getElementById('eqPanel').classList.add('visible');
+}
+
+function applyBlend(mode){
+  if(!savedColors[0]||!savedColors[1])return;
+  if(blendAnim)cancelAnimationFrame(blendAnim);
+  document.querySelectorAll('.blend-btn').forEach(b=>b.classList.remove('active'));
+  const btn=document.querySelector('[data-mode="'+mode+'"]');
+  if(btn)btn.classList.add('active');
+  currentMode=mode;
+
+  const labels={
+    normal:'Normal — T passes directly through',
+    multiply:'Multiply — B&times;T, always darkens',
+    screen:'Screen — 1&minus;(1&minus;B)(1&minus;T), always lightens',
+    overlay:'Overlay — Multiply+Screen split at midpoint',
+    difference:'Difference — |B&minus;T|, inverts toward contrast',
+    hue:'Hue — blend hue applied over base luminosity'
+  };
+  document.getElementById('vennModeLabel').innerHTML=labels[mode]||mode;
+
+  const start=performance.now(), dur=1200;
+  function step(now){
+    const t=Math.min((now-start)/dur,1);
+    const ease=t<0.5?2*t*t:-1+(4-2*t)*t;
+    drawVenn(ease,mode);
+    if(t<1)blendAnim=requestAnimationFrame(step);
+    else buildEquationClean(mode,savedColors[0],savedColors[1]);
+  }
+  blendAnim=requestAnimationFrame(step);
+}
+
+drawRainbow();
+window.addEventListener('resize',drawRainbow);
 </script>
 </body>
 </html>
