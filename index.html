@@ -506,7 +506,8 @@ input[type=range].pi-range::-webkit-slider-thumb{-webkit-appearance:none;width:1
 
 <div class="section">
   <div class="section-header"><h2>Monitor Gamma</h2></div>
-  <p><em>[Content to be added regarding monitor gamma and its impact on color display and blending calculations.]</em></p>
+  <p>In addition to RGB values, blend mode calculations are influenced by gamma, which affects how pixel values are interpreted during computation. Because RGB values are often stored in a gamma-encoded color space rather than a linear one, their numerical values do not directly correspond to actual light intensity. This impacts blend mode formulas, as operations such as Multiply, Screen, and Overlay can produce different results depending on whether calculations occur in gamma-encoded or linear space, affecting contrast, midtones, and highlight behavior. Because gamma-encoded values are non-linear, arithmetic operations performed directly on them do not produce the same results as those performed on linear-light values, meaning gamma can alter the numerical output of a blend calculation itself, not just its visual appearance.</p>
+  <p>To account for this, some workflows convert RGB values into linear space before applying blend mode formulas, then convert the result back into gamma-encoded space for display. In this approach, the formulas operate on proportional light intensities rather than perceptually encoded values, producing more physically accurate results. As a result, gamma acts as an additional factor in pixel computation, influencing both how blend formulas behave and the RGB values they produce before opacity is applied. This is important to note, though it does not affect the formula used in this article, which assumes linearity.</p>
 </div>
 
 <div class="divider"></div>
@@ -672,6 +673,7 @@ input[type=range].pi-range::-webkit-slider-thumb{-webkit-appearance:none;width:1
     <div class="source-item"><div class="source-dot"></div><div class="source-text">Kost, Julieanne. &ldquo;Working with Blend Modes in Photoshop.&rdquo; <em>Julieanne Kost&rsquo;s Blog</em>, 2018.</div></div>
     <div class="source-item"><div class="source-dot"></div><div class="source-text">Sucan, Marius. &ldquo;Blending Modes Math Formulas.&rdquo; <em>Sucan.ro Blog</em>, July 2023.</div></div>
     <div class="source-item"><div class="source-dot"></div><div class="source-text">Thomas, Robert. &ldquo;A Detailed Explanation of How Photoshop Blend Modes Work.&rdquo; <em>Photo Blog Stop</em>, 17 Apr. 2011.</div></div>
+    <div class="source-item"><div class="source-dot"></div><div class="source-text">Nine Degrees Below. &ldquo;Linear gamma RGB: blur, normal blend.&rdquo; <em>Ninedegreesbelow.com</em>, 2015. https://ninedegreesbelow.com/photography/linear-gamma-blur-normal-blend.html</div></div>
   </div>
 </div>
 
